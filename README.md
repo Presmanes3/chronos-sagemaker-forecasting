@@ -1,4 +1,30 @@
-# TimeSeriesForecasting
+# 🕒 Time Series Forecasting with Amazon SageMaker & Hugging Face Chronos
+
+This project demonstrates how to build a **minimal yet production-ready pipeline** for **time series forecasting** using **Amazon SageMaker** and the [Chronos-bolt-tiny](https://huggingface.co/amazon/chronos-bolt-tiny) model from **Hugging Face**.
+
+The original repository of chronos can be found [here](https://github.com/amazon-science/chronos-forecasting/tree/main)
+
+## 🎯 Project Overview
+
+The goal of this project is to **fine-tune**, **deploy**, and **serve** a Hugging Face model for time series prediction using **SageMaker training and inference infrastructure**, and finally interact with it via a **Streamlit web interface**.
+
+The workflow demonstrates the complete lifecycle of an ML model:
+1. Data preparation and upload to S3
+2. Model fine-tuning on SageMaker
+3. Model deployment as an API endpoint
+4. Local Docker-based inference (optional)
+5. Frontend interaction with Streamlit
+
+## 🧠 Model
+
+We use **[`amazon/chronos-bolt-tiny`](https://huggingface.co/amazon/chronos-bolt-tiny)** — a lightweight, transformer-based model specialized in **time series forecasting**.
+
+Chronos models are capable of:
+- Multivariate forecasting
+- Handling missing values
+- Capturing temporal dependencies
+- Fast inference even on CPU instances
+
 
 # AWS Set-Up
 To execute this project, it is necessary to configure AWS credentials. To do this, first, create a profile:
