@@ -1,0 +1,24 @@
+FROM pytorch/pytorch:2.8.0-cuda12.9-cudnn9-runtime
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=TRUE
+ENV PYTHONDONTWRITEBYTECODE=TRUE
+
+RUN apt-get update && apt-get install -y git curl && pip install --upgrade pip
+
+WORKDIR /opt/ml/code
+COPY . .
+
+RUN pip install -r requirements.txt
+
+# --- Entrypoint SageMaker ---
+# SageMaker ejecuta el contenedor con:
+# /opt/ml/model  -> artefactos descargados desde S3
+# /opt/ml/input  -> datos de entrada
+# /opt/ml/output -> salida de predicciones
+# /opt/ml/code   -> tu código
+ENV PYTHONPATH="/opt/ml/code:${PYTHONPATH}"
+
+EXPOSE 8080
+
+ENTRYPOINT ["python", "inference.py"]
