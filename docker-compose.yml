@@ -1,0 +1,17 @@
+services:
+  chronos:
+    build:
+      context: ./deployment/
+      dockerfile: dockerfile
+    container_name: chronos-sagemaker
+    image: chronos-sagemaker:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./models/chronos-bolt-tiny:/opt/ml/model
+      - ./deployment:/opt/ml/code
+    environment:
+      - PYTHONUNBUFFERED=1
+      - AWS_DEFAULT_REGION=eu-west-1
+    command: python inference.py
+    restart: unless-stopped
