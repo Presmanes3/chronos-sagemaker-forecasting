@@ -2,7 +2,7 @@
 
 This project demonstrates how to build a **minimal yet production-ready pipeline** for **time series forecasting** using **Amazon SageMaker** and the [Chronos-bolt-tiny](https://huggingface.co/amazon/chronos-bolt-tiny) model from **Hugging Face**.
 
-The original repository of chronos can be found [here](https://github.com/amazon-science/chronos-forecasting/tree/main)
+The original repository of Chronos can be found [here](https://github.com/amazon-science/chronos-forecasting/tree/main).
 
 ## 🎯 Project Overview
 
@@ -25,8 +25,8 @@ Chronos models are capable of:
 - Capturing temporal dependencies
 - Fast inference even on CPU instances
 
+## AWS Set-Up
 
-# AWS Set-Up
 To execute this project, it is necessary to configure AWS credentials. To do this, first, create a profile:
 
 ``$ aws configure --profile <profile-name>``
@@ -42,3 +42,13 @@ aws iam attach-role-policy --role-name SageMakerExecutionRole --policy-arn arn:a
 
 aws iam attach-role-policy --role-name SageMakerExecutionRole --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
 ```
+
+## ECR Public Login
+
+To create the Docker image with the Docker Compose document, it is first necessary to log in to the public ECR repository.
+
+``aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 763104351884.dkr.ecr.us-east-1.amazonaws.com``
+
+The response should be ``Login Succeeded``.
+
+If this is the case, you can now build the Docker image and push it to ECR.
