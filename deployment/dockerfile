@@ -12,7 +12,3 @@ COPY . .
 RUN pip install -r requirements.txt
 
 ENV PYTHONPATH="/opt/ml/code:${PYTHONPATH}"
-
-# EXPOSE 8080
-
-# ENTRYPOINT ["python", "inference.py"]
