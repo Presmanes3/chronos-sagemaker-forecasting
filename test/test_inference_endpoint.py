@@ -22,7 +22,7 @@ runtime_client = boto_session.client("sagemaker-runtime")
 # Example input: a normalized time series of 5 points
 series = [10.0, 20.0, 30.0, 40.0, 50.0]
 payload = {
-    "inputs": series,
+    "series": series,
     "prediction_length": 3
 }
 

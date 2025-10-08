@@ -17,13 +17,17 @@ MODEL_DATA = "s3://chronos-forecasting-presmanes/chronos-bolt-tiny/model.tar.gz"
 ECR_IMAGE_URI = os.environ["AWS_ECR_IMAGE_URI"]  # 👈 Añádelo en tu .env
 ENDPOINT_NAME = os.getenv("AWS_SAGEMAKER_ENDPOINT_NAME")
 ENDPOINT_CONFIG_NAME = f"{ENDPOINT_NAME}-config"
+MODEL_NAME = f"{ENDPOINT_NAME}-model"
 
 print(f"Using model artifact from {MODEL_DATA}")
 print(f"Using custom container from {ECR_IMAGE_URI}")
+print(f"Deploying to endpoint: {ENDPOINT_NAME}")
+print(f"Using role: {role}")
 
 model = Model(
     image_uri           = ECR_IMAGE_URI,
     model_data          = MODEL_DATA,  
+    name                = MODEL_NAME,
     role                = role,
     sagemaker_session   = sm_session,
     env={
@@ -49,11 +53,11 @@ except sm_client.exceptions.ClientError:
     update_existing = False
 
 predictor = model.deploy(
-    initial_instance_count=1,
-    instance_type="ml.m5.large",
-    endpoint_name=ENDPOINT_NAME,
-    update_endpoint=update_existing,
-    log=True
+    initial_instance_count  = 1,
+    instance_type           = "ml.m5.large",
+    endpoint_name           = ENDPOINT_NAME,
+    update_endpoint         = update_existing,
+    log                     = True
 )
 
 print("✅ Deployment succeeded!")
