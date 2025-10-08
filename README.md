@@ -25,6 +25,16 @@ Chronos models are capable of:
 - Capturing temporal dependencies
 - Fast inference even on CPU instances
 
+## TODO
+
+- [X] EDA for testing base model locally.
+- [ ] Create Docker file for SageMaker inference.
+- [ ] Create training script for SageMaker training job.
+- [ ] Create script to launch training job on SageMaker.
+- [ ] Create script to deploy model to SageMaker endpoint.
+- [ ] Create script to test inference endpoint.
+- [ ] Create Streamlit app for user interaction.
+
 ## AWS Set-Up
 
 To execute this project, it is necessary to configure AWS credentials. To do this, first, create a profile:
