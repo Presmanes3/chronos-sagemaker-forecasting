@@ -4,62 +4,99 @@ import os
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 
-# -----------------------------
-# Load environment variables
-# -----------------------------
-load_dotenv()
+def load_env_variables():
+    """Load environment variables."""
+    load_dotenv()
+    return {
+        "AWS_PROFILE": os.getenv("AWS_PROFILE"),
+        "AWS_REGION": os.getenv("AWS_REGION", "eu-west-1"),
+        "REPO_NAME": os.getenv("ECR_REPO_NAME", "chronos-custom"),
+        "IMAGE_TAG": os.getenv("IMAGE_TAG", "latest"),
+        "DOCKERFILE_PATH": "deployment/Dockerfile",
+        "DOCKER_CONTEXT": "./deployment"
+    }
 
-AWS_PROFILE = os.getenv("AWS_PROFILE")
-AWS_REGION = os.getenv("AWS_REGION", "eu-west-1")
-REPO_NAME = os.getenv("ECR_REPO_NAME", "chronos-custom")
-IMAGE_TAG = os.getenv("IMAGE_TAG", "latest")
-DOCKERFILE_PATH = "deployment/Dockerfile"
-DOCKER_CONTEXT = "./deployment"
+def get_aws_clients(profile, region):
+    """Initialize AWS clients."""
+    session = boto3.Session(profile_name=profile, region_name=region)
+    return session.client("ecr"), session.client("sts")
 
-session = boto3.Session(profile_name=AWS_PROFILE, region_name=AWS_REGION)
-ecr_client = session.client("ecr")
-sts_client = session.client("sts")
+def get_account_id(sts_client):
+    """Retrieve AWS account ID."""
+    return sts_client.get_caller_identity()["Account"]
 
-account_id = sts_client.get_caller_identity()["Account"]
-repo_uri = f"{account_id}.dkr.ecr.{AWS_REGION}.amazonaws.com/{REPO_NAME}:{IMAGE_TAG}"
+def ensure_ecr_repository(ecr_client, repo_name):
+    """Ensure the ECR repository exists."""
+    try:
+        ecr_client.describe_repositories(repositoryNames=[repo_name])
+        print(f"✅ ECR repository '{repo_name}' already exists.")
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "RepositoryNotFoundException":
+            print(f"🆕 Creating ECR repository: {repo_name}")
+            ecr_client.create_repository(repositoryName=repo_name)
+        else:
+            raise e
 
-print(f"📦 AWS Account: {account_id}")
-print(f"🧱 Target ECR URI: {repo_uri}")
+def docker_login(account_id, region, profile):
+    """Log in to ECR using Docker."""
+    print("🔐 Logging in to ECR...")
+    login_cmd = (
+        f"aws ecr get-login-password --region {region} --profile {profile} | "
+        f"docker login --username AWS --password-stdin {account_id}.dkr.ecr.{region}.amazonaws.com"
+    )
+    subprocess.run(login_cmd, shell=True, check=True)
+    print("✅ Docker authenticated with ECR.")
 
-try:
-    ecr_client.describe_repositories(repositoryNames=[REPO_NAME])
-    print(f"✅ ECR repository '{REPO_NAME}' already exists.")
-except ClientError as e:
-    if e.response["Error"]["Code"] == "RepositoryNotFoundException":
-        print(f"🆕 Creating ECR repository: {REPO_NAME}")
-        ecr_client.create_repository(repositoryName=REPO_NAME)
-    else:
-        raise e
+def build_and_push_docker_image(repo_uri, repo_name, image_tag, dockerfile_path, docker_context):
+    """Build, tag, and push Docker image."""
+    print("🏗️ Building Docker image...")
+    subprocess.run(
+        ["docker", "build", "-t", f"{repo_name}:{image_tag}", "-f", dockerfile_path, docker_context],
+        check=True
+    )
+    print("✅ Docker build complete.")
 
-print("🔐 Logging in to ECR...")
-login_pw = ecr_client.get_authorization_token()["authorizationData"][0]["authorizationToken"]
-proxy_endpoint = ecr_client.get_authorization_token()["authorizationData"][0]["proxyEndpoint"]
+    print(f"🏷️ Tagging image for ECR: {repo_uri}")
+    subprocess.run(
+        ["docker", "tag", f"{repo_name}:{image_tag}", repo_uri],
+        check=True
+    )
 
-login_cmd = f"aws ecr get-login-password --region {AWS_REGION} --profile {AWS_PROFILE} | docker login --username AWS --password-stdin {account_id}.dkr.ecr.{AWS_REGION}.amazonaws.com"
-subprocess.run(login_cmd, shell=True, check=True)
-print("✅ Docker authenticated with ECR.")
+    print("☁️ Pushing image to ECR...")
+    subprocess.run(
+        ["docker", "push", repo_uri],
+        check=True
+    )
+    print(f"🚀 Successfully pushed to ECR: {repo_uri}")
 
-print("🏗️ Building Docker image...")
-subprocess.run(
-    ["docker", "build", "-t", f"{REPO_NAME}:{IMAGE_TAG}", "-f", DOCKERFILE_PATH, DOCKER_CONTEXT],
-    check=True
-)
-print("✅ Docker build complete.")
+def main():
+    # Load environment variables
+    env = load_env_variables()
 
-print(f"🏷️ Tagging image for ECR: {repo_uri}")
-subprocess.run(
-    ["docker", "tag", f"{REPO_NAME}:{IMAGE_TAG}", repo_uri],
-    check=True
-)
+    # Initialize AWS clients
+    ecr_client, sts_client = get_aws_clients(env["AWS_PROFILE"], env["AWS_REGION"])
 
-print("☁️ Pushing image to ECR...")
-subprocess.run(
-    ["docker", "push", repo_uri],
-    check=True
-)
-print(f"🚀 Successfully pushed to ECR: {repo_uri}")
+    # Get account ID and repository URI
+    account_id = get_account_id(sts_client)
+    repo_uri = f"{account_id}.dkr.ecr.{env['AWS_REGION']}.amazonaws.com/{env['REPO_NAME']}:{env['IMAGE_TAG']}"
+
+    print(f"📦 AWS Account: {account_id}")
+    print(f"🧱 Target ECR URI: {repo_uri}")
+
+    # Ensure ECR repository exists
+    ensure_ecr_repository(ecr_client, env["REPO_NAME"])
+
+    # Log in to ECR
+    docker_login(account_id, env["AWS_REGION"], env["AWS_PROFILE"])
+
+    # Build, tag, and push Docker image
+    build_and_push_docker_image(
+        repo_uri,
+        env["REPO_NAME"],
+        env["IMAGE_TAG"],
+        env["DOCKERFILE_PATH"],
+        env["DOCKER_CONTEXT"]
+    )
+
+if __name__ == "__main__":
+    main()
