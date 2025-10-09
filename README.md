@@ -35,6 +35,9 @@ Chronos models are capable of:
 - [ ] Create script to test inference endpoint.
 - [ ] Create Streamlit app for user interaction.
 
+# Requirements
+This project requires Python 3.10.
+
 ## AWS Set-Up
 
 To execute this project, it is necessary to configure AWS credentials. To do this, first, create a profile:
