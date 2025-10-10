@@ -4,6 +4,7 @@ import sagemaker
 
 from dotenv import load_dotenv
 
+
 load_dotenv()
 
 
@@ -12,42 +13,49 @@ boto3_session = boto3.Session(profile_name=os.environ.get("AWS_PROFILE"))
 
 session = sagemaker.Session(boto_session=boto3_session)
 
-ecr_uri = os.environ.get("AWS_ECR_TRAINING_IMAGE_URI")
+BASE_MODEL_PATH     = os.getenv("BASE_MODEL_PATH")
+TRAINING_DATA_PATH  = os.getenv("TRAINING_DATA_PATH")
+TUNNED_MODEL_PATH   = os.getenv("TUNNED_MODEL_PATH")
+AWS_PROFILE         = ""
+TRAINING_LIMIT_TIME = os.getenv("TRAINING_LIMIT_TIME", "3600")
 
-if ecr_uri is None:
-    raise ValueError("AWS_ECR_TRAINING_IMAGE_URI environment variable is not set.")
+ECR_URI             = os.getenv("AWS_ECR_TRAINING_IMAGE_URI")
+ROLE                = os.getenv("AWS_SAGEMAKER_ROLE_ARN")
 
-role = os.environ.get("AWS_SAGEMAKER_ROLE_ARN")
-if role is None:
-    raise ValueError("AWS_SAGEMAKER_ROLE_ARN environment variable is not set.")
+if not BASE_MODEL_PATH or not TRAINING_DATA_PATH or not TUNNED_MODEL_PATH or not ECR_URI or not ROLE:
+    missing = [
+        k for k, v in {
+            "BASE_MODEL_PATH": BASE_MODEL_PATH,
+            "TRAINING_DATA_PATH": TRAINING_DATA_PATH,
+            "TUNNED_MODEL_PATH": TUNNED_MODEL_PATH,
+            "AWS_ECR_TRAINING_IMAGE_URI": ECR_URI,
+            "AWS_SAGEMAKER_ROLE_ARN": ROLE,
+        }.items() if v is None
+    ]
+    raise ValueError(f"Missing required environment variables: {', '.join(missing)}")
 
-s3_bucket = os.environ.get("AWS_S3_BUCKET")
-if s3_bucket is None:
-    raise ValueError("AWS_S3_BUCKET environment variable is not set.")
-
-base_model_path = os.environ.get("BASE_MODEL_PATH")
-if base_model_path is None:
-    raise ValueError("BASE_MODEL_PATH environment variable is not set.")
-
-training_data_path = os.environ.get("TRAINING_DATA_PATH")
-if training_data_path is None:
-    raise ValueError("TRAINING_DATA_PATH environment variable is not set.")
-
-training_time_limit = os.environ.get("TRAINING_LIMIT_TIME", "3600")
+print(f"""System Variables:
+      - BASE_MODEL_PATH:     {BASE_MODEL_PATH}
+      - TRAINING_DATA_PATH:  {TRAINING_DATA_PATH}
+      - TUNNED_MODEL_PATH:   {TUNNED_MODEL_PATH}
+      - AWS_PROFILE:         {AWS_PROFILE}
+      - TRAINING_LIMIT_TIME: {TRAINING_LIMIT_TIME} seconds
+      - ECR_URI:             {ECR_URI}
+      - ROLE:                {ROLE}
+      """)
 
 estimator = sagemaker.estimator.Estimator(
-    image_uri           = ecr_uri,
-    role                = role,
+    image_uri           = ECR_URI,
+    role                = ROLE,
     instance_count      = 1,
     instance_type       = "ml.m5.large",
     base_job_name       = "chronos-training-job",
     environment         = {
-        "AWS_S3_BUCKET": s3_bucket,
-        "TRAINING_DATA_PATH": training_data_path,
-        "TRAINING_LIMIT_TIME": training_time_limit,
-        "BASE_MODEL_PATH": base_model_path,
-        "S3_SUBFOLDER" : "fine-tunned",
-        "OUTPUT_DIR": "models/fine-tunned/"
+        "TRAINING_DATA_PATH": TRAINING_DATA_PATH,
+        "TRAINING_LIMIT_TIME": TRAINING_LIMIT_TIME,
+        "BASE_MODEL_PATH": BASE_MODEL_PATH,
+        "TUNNED_MODEL_PATH": TUNNED_MODEL_PATH,
+        "AWS_PROFILE": AWS_PROFILE,
     },
     sagemaker_session   = session,
 )
