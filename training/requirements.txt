@@ -1,5 +1,0 @@
-transformers
-huggingface_hub
-chronos-forecasting
-boto3
-sagemaker

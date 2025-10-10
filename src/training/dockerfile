@@ -1,0 +1,20 @@
+FROM python:3.10-slim
+
+# Set working directory (SageMaker standard: /opt/ml/code)
+WORKDIR /opt/ml/code
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y tar gzip && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy training code
+COPY train_entrypoint.py ./
+
+# Environment variable for SageMaker entrypoint
+ENV PYTHONUNBUFFERED=TRUE
+
+ENTRYPOINT ["python", "train_entrypoint.py"]
