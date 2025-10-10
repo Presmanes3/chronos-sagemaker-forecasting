@@ -23,8 +23,8 @@ except ImportError:
 BASE_MODEL_PATH     = os.getenv("BASE_MODEL_PATH")
 TRAINING_DATA_PATH  = os.getenv("TRAINING_DATA_PATH")
 TUNNED_MODEL_PATH   = os.getenv("TUNNED_MODEL_PATH")
-AWS_PROFILE         = os.getenv("AWS_PROFILE", "default")
-TRAINING_LIMIT_TIME = int(os.getenv("TRAINING_LIMIT_TIME", "3600"))
+AWS_PROFILE         = os.getenv("AWS_PROFILE")
+TRAINING_LIMIT_TIME = int(os.getenv("TRAINING_LIMIT_TIME", "100"))
 
 if not BASE_MODEL_PATH or not TRAINING_DATA_PATH or not TUNNED_MODEL_PATH:
     missing = [
