@@ -28,9 +28,8 @@ Chronos models are capable of:
 ## TODO
 
 - [X] EDA for testing base model locally.
-- [ ] Create Docker file for SageMaker inference.
-- [ ] Create training script for SageMaker training job.
-- [ ] Create script to launch training job on SageMaker.
+- [X] Create training script with Autgluon locally.
+- [ ] Create training script with Autgluon using a training job in SageMaker.
 - [ ] Create script to deploy model to SageMaker endpoint.
 - [ ] Create script to test inference endpoint.
 - [ ] Create Streamlit app for user interaction.
