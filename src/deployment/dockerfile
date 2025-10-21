@@ -11,12 +11,13 @@ RUN apt-get update && apt-get install -y git curl && \
 
 USER sagemaker-user
 
-WORKDIR /opt/ml/code
+WORKDIR /opt/ml/model
 
 COPY requirements.txt .
+
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY inference.py .
 
 ENV SAGEMAKER_PROGRAM=inference.py
-ENV PYTHONPATH="/opt/ml/code"
+ENV PYTHONPATH="/opt/ml/model"
