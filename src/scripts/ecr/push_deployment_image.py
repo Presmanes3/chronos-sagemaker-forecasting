@@ -66,10 +66,7 @@ def build_and_push_docker_image(repo_uri, repo_name, image_tag, dockerfile_path,
     subprocess.run([
         "docker",
         "build",
-        "--no-cache",
         "--platform=linux/amd64",
-        "--provenance=false",
-        "--output", "oci-mediatypes=false,type=image",
         "-t", f"{repo_name}:{image_tag}",
         "-f", dockerfile_path,
         docker_context
