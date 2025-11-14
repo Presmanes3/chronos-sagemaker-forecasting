@@ -1,45 +1,27 @@
-import os
-import json
 import boto3
-import numpy as np
-from dotenv import load_dotenv
+import pandas as pd
+import json
 
-# -----------------------------
-# Load AWS credentials
-# -----------------------------
-load_dotenv()
+# Crear cliente SageMaker Runtime
+runtime = boto3.client("sagemaker-runtime", region_name="eu-west-1")
 
-AWS_PROFILE = os.getenv("AWS_PROFILE")
-ENDPOINT_NAME = os.getenv("AWS_SAGEMAKER_ENDPOINT_NAME")
+# Crear un dataframe similar al de entrenamiento
+data = pd.DataFrame({
+    "item_id": ["series_1"] * 10,
+    "timestamp": pd.date_range("2025-11-01", periods=10, freq="10min"),
+    "ActivePower": [120, 122, 121, 119, 118, 121, 123, 125, 124, 126],
+})
 
-# Use your configured profile
-boto_session = boto3.Session(profile_name=AWS_PROFILE)
-runtime_client = boto_session.client("sagemaker-runtime")
+# Convertir a JSON
+payload = data.to_json(orient="records")
 
-# -----------------------------
-# Prepare input data
-# -----------------------------
-# Example input: a normalized time series of 5 points
-series = [10.0, 20.0, 30.0, 40.0, 50.0]
-payload = {
-    "series": series,
-    "prediction_length": 3
-}
-
-print("📤 Sending request to SageMaker endpoint...")
-
-# -----------------------------
-# Invoke endpoint
-# -----------------------------
-response = runtime_client.invoke_endpoint(
-    EndpointName=ENDPOINT_NAME,
+# Llamar al endpoint
+response = runtime.invoke_endpoint(
+    EndpointName="chronos-forecasting-endpoint",
     ContentType="application/json",
-    Body=json.dumps(payload)
+    Body=payload
 )
 
-# -----------------------------
-# Parse response
-# -----------------------------
+# Leer respuesta
 result = json.loads(response["Body"].read().decode("utf-8"))
-print("✅ Inference result:")
-print(json.dumps(result, indent=2))
+print(result)

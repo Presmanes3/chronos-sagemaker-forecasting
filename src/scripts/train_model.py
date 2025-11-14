@@ -90,11 +90,12 @@ def get_local_data_path(data_path: str, profile: str = None) -> str:
 
 def compress_model_folder(folder_path: str) -> str:
     """Compresses a folder into a temporary .tar.gz and returns its path."""
-    archive_path = os.path.join(tempfile.gettempdir(), "fine_tuned_chronos_model.tar.gz")
+    archive_path = os.path.join("./models/fine_tunned", "fine_tuned_chronos_model.tar.gz")
     with tarfile.open(archive_path, "w:gz") as tar:
         for file_name in os.listdir(folder_path):
             file_path = os.path.join(folder_path, file_name)
-            tar.add(file_path, arcname=file_name)
+            tar.add(file_path, arcname=f"model/{file_name}")
+
     return archive_path
 
 
@@ -133,7 +134,7 @@ try:
     print("🚀 Fine-tuning Chronos model...")
     predictor.fit(
         train_data=ts_df,
-        time_limit=10,
+        time_limit=100,
         hyperparameters={
             "Chronos": {
                 "pretrained_model_name": "chronos_bolt_tiny",
