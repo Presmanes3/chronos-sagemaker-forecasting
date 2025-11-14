@@ -1,3 +1,17 @@
+"""
+This script launches a training job in SageMaker using a custom Docker container hosted in ECR.
+Requires the following environment variables:
+- BASE_MODEL_PATH: S3 path to the base model.
+- TRAINING_DATA_PATH: S3 path to the training data.
+- TUNNED_MODEL_PATH: S3 path where the tuned model will be saved.
+- AWS_ECR_TRAINING_IMAGE_URI: URI of the Docker container in ECR.
+- AWS_SAGEMAKER_ROLE_ARN: ARN of the SageMaker role with appropriate permissions.
+- TRAINING_LIMIT_TIME: (Optional) Time limit for training in seconds (default 10).
+
+The training container Dockerfile is located in src/training.
+"""
+
+
 import os
 import boto3
 import sagemaker
