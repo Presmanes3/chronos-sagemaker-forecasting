@@ -63,10 +63,14 @@ def build_and_push_docker_image(repo_uri, repo_name, image_tag, dockerfile_path,
     print("🏗️ Building Docker image (linux/amd64)...")
     env = os.environ.copy()
     env["DOCKER_BUILDKIT"] = "0"
+    env["COMPOSE_DOCKER_CLI_BUILD "] = "0"
     subprocess.run([
         "docker",
         "build",
-        "--platform=linux/amd64",
+        "--no-cache",
+        "--platform", "linux/amd64",
+        "--provenance=false",
+        # "--buildx=plain",
         "-t", f"{repo_name}:{image_tag}",
         "-f", dockerfile_path,
         docker_context

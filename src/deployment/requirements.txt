@@ -5,4 +5,5 @@ boto3
 sagemaker
 fastapi
 uvicorn
-torch
+# torch
+# autogluon.timeseries
