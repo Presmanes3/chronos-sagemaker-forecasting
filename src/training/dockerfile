@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM autogluon/autogluon:1.3.1-cpu-framework-ubuntu22.04-py3.11
 
 # Set working directory (SageMaker standard: /opt/ml/code)
 WORKDIR /opt/ml/code
