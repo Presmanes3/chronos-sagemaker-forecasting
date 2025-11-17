@@ -10,7 +10,7 @@ def load_env_variables():
     return {
         "AWS_PROFILE": os.getenv("AWS_PROFILE"),
         "AWS_REGION": os.getenv("AWS_REGION", "eu-west-1"),
-        "REPO_NAME": os.getenv("ECR_DEPLOYMENT_REPO_NAME", "chronos-deployment"),
+        "REPO_NAME": os.getenv("AWS_ECR_DEPLOYMENT_REPO_NAME", "chronos-deployment"),
         "IMAGE_TAG": os.getenv("IMAGE_TAG", "latest"),
         "DOCKERFILE_PATH": "./src/deployment/dockerfile",
         "DOCKER_CONTEXT": "./src/deployment"
