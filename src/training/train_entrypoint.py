@@ -22,7 +22,7 @@ except ImportError:
 # -----------------------------------------------------------------------------
 BASE_MODEL_PATH = os.getenv("BASE_MODEL_PATH")
 TRAINING_DATA_PATH = os.getenv("TRAINING_DATA_PATH")
-TUNED_MODEL_PATH = os.getenv("TUNNED_MODEL_PATH")  # keeping env var name for compatibility
+TUNED_MODEL_PATH = os.getenv("TUNED_MODEL_PATH")  # keeping env var name for compatibility
 AWS_PROFILE = os.getenv("AWS_PROFILE")
 TRAINING_LIMIT_TIME = int(os.getenv("TRAINING_LIMIT_TIME", "100"))
 
@@ -201,4 +201,36 @@ if not Path("/opt/ml/model/fine_tuned").exists():
     print("⚠️ Fine-tuned model directory missing under /opt/ml/model/")
 
 print("✅ All steps completed successfully.")
+print("========================================================\n")
+
+# =============================================================================
+# Step 6 — Compress full /opt/ml/model and upload to TUNED_MODEL_PATH
+# =============================================================================
+
+
+print("\n========================================================")
+print("📦 Creating final model.tar.gz for manual upload...")
+print("========================================================")
+
+model_root = "/opt/ml/model"
+local_tar_path = "/tmp/model.tar.gz"
+
+# Create tar.gz of full /opt/ml/model
+with tarfile.open(local_tar_path, "w:gz") as tar:
+    tar.add(model_root, arcname=".")
+    print(f"✅ Created archive at: {local_tar_path}")
+
+# Parse tuned model S3 path
+if not TUNED_MODEL_PATH.startswith("s3://"):
+    raise ValueError("TUNED_MODEL_PATH must be an S3 URI, e.g. s3://bucket/path/model.tar.gz")
+
+bucket = TUNED_MODEL_PATH.replace("s3://", "").split("/", 1)[0]
+key = TUNED_MODEL_PATH.replace(f"s3://{bucket}/", "")
+
+print(f"⬆️  Uploading model.tar.gz → {TUNED_MODEL_PATH}")
+
+s3 = session.client("s3")
+s3.upload_file(local_tar_path, bucket, key)
+
+print("✅ Model uploaded successfully!")
 print("========================================================\n")
