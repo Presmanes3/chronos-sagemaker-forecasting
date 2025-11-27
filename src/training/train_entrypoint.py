@@ -8,18 +8,12 @@ import shutil
 from pathlib import Path
 from autogluon.timeseries import TimeSeriesPredictor, TimeSeriesDataFrame
 
-# =============================================================================
-# Load environment variables
-# =============================================================================
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    print("⚠️  python-dotenv not installed — proceeding without .env file.")
 
-# -----------------------------------------------------------------------------
-# Configuration
-# -----------------------------------------------------------------------------
+from dotenv import load_dotenv
+load_dotenv()
+
+
+# ----- Load environment variables
 BASE_MODEL_PATH = os.getenv("BASE_MODEL_PATH")
 TRAINING_DATA_PATH = os.getenv("TRAINING_DATA_PATH")
 TUNED_MODEL_PATH = os.getenv("TUNED_MODEL_PATH")  # keeping env var name for compatibility
@@ -83,9 +77,7 @@ def extract_model_from_tar(tar_path: str) -> str:
     sys.exit("❌ No valid Chronos base model found inside archive.")
 
 
-# =============================================================================
-# Step 1 — Prepare model and data
-# =============================================================================
+# ----- Create sesion
 session = create_boto3_session(AWS_PROFILE)
 
 # Download and extract the base model
@@ -104,9 +96,7 @@ training_data_local = (
 )
 print(f"✅ Training data ready at: {training_data_local}")
 
-# =============================================================================
-# Step 2 — Load training dataset
-# =============================================================================
+# ----- Load training data into TimeSeriesDataFrame
 df = pd.read_csv(training_data_local)
 df["item_id"] = "Turbine_1"
 df.rename(columns={"Unnamed: 0": "timestamp"}, inplace=True)
@@ -120,9 +110,7 @@ ts_df = TimeSeriesDataFrame.from_data_frame(
 
 print(f"📊 Training dataset loaded: {len(ts_df)} time steps | columns = {list(ts_df.columns)}")
 
-# =============================================================================
-# Step 3 — Fine-tune model
-# =============================================================================
+# ----- Fine-tune the model
 output_dir = "/opt/ml/model/fine_tuned"
 print(f"🏗️  Starting fine-tuning → {output_dir}")
 
@@ -150,9 +138,7 @@ except Exception as e:
     print(f"❌ Fine-tuning failed: {e}")
     sys.exit(1)
 
-# =============================================================================
-# Step 3.1 — Embed base model artifacts into fine-tuned model
-# =============================================================================
+# ----- Embed base model artifacts into fine-tuned model directories
 base_model_dir = Path("/opt/ml/model/base_model/chronos-bolt-tiny")
 target_dir = Path(output_dir) / "models"
 
@@ -169,9 +155,7 @@ for chronos_dir in target_dir.rglob("Chronos*"):
         else:
             print(f"⚠️ Missing {fname}, skipped.")
 
-# =============================================================================
-# Step 4 — Verify saved artifacts
-# =============================================================================
+# ----- Verify fine-tuned model artifacts
 chronos_dir = Path(output_dir)
 print(f"🔍 Verifying model artifacts inside {chronos_dir} ...")
 
@@ -185,9 +169,7 @@ if list(chronos_dir.rglob("config.json")):
 else:
     print("⚠️ Warning: No Chronos configuration files found. Inference may fail.")
 
-# =============================================================================
-# Step 5 — Finalize for SageMaker export
-# =============================================================================
+# ----- Finalize model export
 print("\n========================================================")
 print("📦 FINALIZING MODEL EXPORT")
 print("SageMaker will now automatically package everything under:")
@@ -203,11 +185,7 @@ if not Path("/opt/ml/model/fine_tuned").exists():
 print("✅ All steps completed successfully.")
 print("========================================================\n")
 
-# =============================================================================
-# Step 6 — Compress full /opt/ml/model and upload to TUNED_MODEL_PATH
-# =============================================================================
-
-
+# ----- OPTIONAL: Create tar.gz and upload to S3 for manual deployment
 print("\n========================================================")
 print("📦 Creating final model.tar.gz for manual upload...")
 print("========================================================")
