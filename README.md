@@ -12,7 +12,7 @@ The workflow demonstrates the complete lifecycle of an ML model:
 1. Data preparation and upload to S3
 2. Model fine-tuning on SageMaker
 3. Model deployment as an API endpoint
-4. Local Docker-based inference (optional)
+4. Local Docker-based inference using Uvicorn and FastAPI
 5. Frontend interaction with Streamlit
 
 ## 🧠 Model
@@ -34,8 +34,8 @@ Chronos models are capable of:
 - [X] Create script to test inference endpoint.
 - [ ] Create Streamlit app for user interaction.
 
-# Requirements
-This project requires Python 3.10.
+## Architecture
+![Architecture Diagram](docs/images/diagram.svg)
 
 ## AWS Set-Up
 
