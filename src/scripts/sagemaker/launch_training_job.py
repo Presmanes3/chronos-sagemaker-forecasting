@@ -1,34 +1,42 @@
 """
 This script launches a training job in SageMaker using a custom Docker container hosted in ECR.
 Requires the following environment variables:
-- BASE_MODEL_PATH: S3 path to the base model.
-- TRAINING_DATA_PATH: S3 path to the training data.
-- TUNNED_MODEL_PATH: S3 path where the tuned model will be saved.
-- AWS_ECR_TRAINING_IMAGE_URI: URI of the Docker container in ECR.
-- AWS_SAGEMAKER_ROLE_ARN: ARN of the SageMaker role with appropriate permissions.
-- TRAINING_LIMIT_TIME: (Optional) Time limit for training in seconds (default 10).
 
 The training container Dockerfile is located in src/training.
 """
 
 
 import os
+import sys
 import boto3
 import sagemaker
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+
+from src.config import Config
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
+
+
+# ----- Create sessions
 boto3_session = boto3.Session(profile_name=os.environ.get("AWS_PROFILE"))
 
 session = sagemaker.Session(boto_session=boto3_session)
 
-BASE_MODEL_PATH     = os.getenv("BASE_MODEL_PATH")
-TRAINING_DATA_PATH  = os.getenv("TRAINING_DATA_PATH")
-TUNED_MODEL_PATH   = os.getenv("TUNED_MODEL_PATH")
+# ----- Load configuration
+config = Config("./config.yaml")
+
+
+BASE_MODEL_PATH     = config["paths"]["base_model"] # S3 path to base model which will be fine-tuned
+
+TRAINING_DATA_PATH  = config["paths"]["training_data"]
+TUNED_MODEL_PATH    = config["paths"]["production_model"]
+
 AWS_PROFILE         = os.getenv("AWS_PROFILE")
-TRAINING_LIMIT_TIME = os.getenv("TRAINING_LIMIT_TIME", "10")
+TRAINING_LIMIT_TIME =  str(config["training"]["limit_time"])
 
 ECR_URI             = os.getenv("AWS_ECR_TRAINING_IMAGE_URI")
 ROLE                = os.getenv("AWS_SAGEMAKER_ROLE_ARN")
