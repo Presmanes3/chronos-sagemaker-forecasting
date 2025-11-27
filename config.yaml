@@ -1,0 +1,24 @@
+project:
+  name: chronos-forecasting
+
+paths:
+  base_model: s3://chronos-forecasting-presmanes/models/base/chronos-bolt-tiny.tar.gz
+  training_data: s3://chronos-forecasting-presmanes/data/Turbine_Data.csv
+  production_model: s3://chronos-forecasting-presmanes/models/fine-tunned/chronos-bolt-tiny.tar.gz
+
+  dataset_base: s3://chronos-forecasting-presmanes/data/
+ecr:
+  training:
+    repo_name: chronos-training
+    image_uri: 296062581113.dkr.ecr.eu-west-1.amazonaws.com/chronos-training:latest
+  deployment:
+    repo_name: chronos-deployment
+
+training:
+  limit_time: 10
+
+sagemaker:
+  instance_type: ml.m5.large
+  instance_count: 1
+
+  endpoint_name: chronos-endpoint-prod
