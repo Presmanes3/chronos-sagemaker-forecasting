@@ -4,7 +4,7 @@ project:
 paths:
   base_model: s3://chronos-forecasting-presmanes/models/base/chronos-bolt-tiny.tar.gz
   training_data: s3://chronos-forecasting-presmanes/data/Turbine_Data.csv
-  production_model: s3://chronos-forecasting-presmanes/models/fine-tunned/chronos-bolt-tiny.tar.gz
+  production_model: s3://chronos-forecasting-presmanes/models/fine-tunned/chronos-bolt-tiny-tuned.tar.gz
 
   dataset_base: s3://chronos-forecasting-presmanes/data/
 ecr:
