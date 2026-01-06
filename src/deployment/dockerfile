@@ -15,9 +15,9 @@ RUN apt-get update && apt-get install -y \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy code files
-COPY inference.py .
-COPY serve.py .
+
+# Copy all Python files from deployment directory
+COPY *.py .
 
 # Expose port
 EXPOSE 8080

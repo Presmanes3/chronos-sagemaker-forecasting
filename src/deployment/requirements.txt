@@ -5,5 +5,7 @@ boto3
 sagemaker
 fastapi
 uvicorn
+python-json-logger
+pydantic
 # torch
 # autogluon.timeseries

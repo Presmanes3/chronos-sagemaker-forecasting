@@ -1,4 +1,242 @@
-{
-  "series": [10, 20, 30, 40, 50],
-  "prediction_length": 3
-}
+[
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 00:00:00",
+    "ActivePower": 1250.5
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 01:00:00",
+    "ActivePower": 1320.8
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 02:00:00",
+    "ActivePower": 1410.3
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 03:00:00",
+    "ActivePower": 1385.2
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 04:00:00",
+    "ActivePower": 1295.7
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 05:00:00",
+    "ActivePower": 1205.4
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 06:00:00",
+    "ActivePower": 1180.9
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 07:00:00",
+    "ActivePower": 1225.6
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 08:00:00",
+    "ActivePower": 1340.2
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 09:00:00",
+    "ActivePower": 1425.8
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 10:00:00",
+    "ActivePower": 1510.3
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 11:00:00",
+    "ActivePower": 1565.7
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 12:00:00",
+    "ActivePower": 1590.4
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 13:00:00",
+    "ActivePower": 1575.2
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 14:00:00",
+    "ActivePower": 1540.8
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 15:00:00",
+    "ActivePower": 1495.6
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 16:00:00",
+    "ActivePower": 1430.3
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 17:00:00",
+    "ActivePower": 1365.9
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 18:00:00",
+    "ActivePower": 1290.7
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 19:00:00",
+    "ActivePower": 1220.4
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 20:00:00",
+    "ActivePower": 1175.8
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 21:00:00",
+    "ActivePower": 1155.2
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 22:00:00",
+    "ActivePower": 1190.6
+  },
+  {
+    "item_id": "turbine_1",
+    "timestamp": "2024-01-01 23:00:00",
+    "ActivePower": 1235.3
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 00:00:00",
+    "ActivePower": 980.3
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 01:00:00",
+    "ActivePower": 1015.7
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 02:00:00",
+    "ActivePower": 1085.2
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 03:00:00",
+    "ActivePower": 1065.8
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 04:00:00",
+    "ActivePower": 995.4
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 05:00:00",
+    "ActivePower": 920.6
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 06:00:00",
+    "ActivePower": 905.9
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 07:00:00",
+    "ActivePower": 940.2
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 08:00:00",
+    "ActivePower": 1025.8
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 09:00:00",
+    "ActivePower": 1095.3
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 10:00:00",
+    "ActivePower": 1160.7
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 11:00:00",
+    "ActivePower": 1205.4
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 12:00:00",
+    "ActivePower": 1225.9
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 13:00:00",
+    "ActivePower": 1215.3
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 14:00:00",
+    "ActivePower": 1185.7
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 15:00:00",
+    "ActivePower": 1150.2
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 16:00:00",
+    "ActivePower": 1100.8
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 17:00:00",
+    "ActivePower": 1050.6
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 18:00:00",
+    "ActivePower": 990.4
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 19:00:00",
+    "ActivePower": 935.9
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 20:00:00",
+    "ActivePower": 905.3
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 21:00:00",
+    "ActivePower": 890.7
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 22:00:00",
+    "ActivePower": 915.2
+  },
+  {
+    "item_id": "turbine_2",
+    "timestamp": "2024-01-01 23:00:00",
+    "ActivePower": 950.8
+  }
+]
