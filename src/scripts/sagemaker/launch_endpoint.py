@@ -21,7 +21,6 @@ aws_profile       = os.getenv("AWS_PROFILE")
 role_arn          = os.getenv("AWS_SAGEMAKER_ROLE_ARN")
 ecr_image_uri     = os.getenv("AWS_ECR_DEPLOYMENT_IMAGE_URI")
 
-s3_model_path     = config["paths"]["production_model"]  # S3 path to the production model
 endpoint_name     = config["sagemaker"]["endpoint_name"]
 instance_type     = config["sagemaker"]["instance_type"]
 instance_count    = config["sagemaker"]["instance_count"]
@@ -42,6 +41,51 @@ env_vars = {
 session = boto3.Session(profile_name=aws_profile, region_name=region)
 sm = session.client("sagemaker")
 sagemaker_session = sagemaker.Session(boto_session=session)
+
+def list_s3_production_models(bucket: str, prefix: str) -> list:
+    """List all .tar.gz files in the specified S3 bucket/prefix."""
+    s3 = session.client('s3')
+    try:
+        response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+        if 'Contents' not in response:
+            return []
+        models = [obj['Key'] for obj in response['Contents'] if obj['Key'].endswith('.tar.gz')]
+        return models
+    except Exception as e:
+        print(f"Error listing S3 models: {e}")
+        return []
+
+def select_production_model_interactively(bucket: str, prefix: str) -> str:
+    """Prompt user to select a production model from S3."""
+    models = list_s3_production_models(bucket, prefix)
+    
+    if not models:
+        print(f"\n⚠️  No production models found in s3://{bucket}/{prefix}")
+        use_default = input("Use default from config.yaml? (y/n): ").strip().lower()
+        if use_default == 'y':
+            return config["paths"]["production_model"]
+        else:
+            sys.exit(1)
+    
+    print("\n🚀 Available production models in S3:\n")
+    for i, model in enumerate(models, 1):
+        print(f"  {i}. {model}")
+    print(f"  {len(models) + 1}. Use default from config.yaml")
+    print()
+    
+    while True:
+        try:
+            choice = input(f"Select a model for deployment (1-{len(models) + 1}): ").strip()
+            choice_idx = int(choice) - 1
+            
+            if choice_idx == len(models):
+                return config["paths"]["production_model"]
+            elif 0 <= choice_idx < len(models):
+                return f"s3://{bucket}/{models[choice_idx]}"
+            else:
+                print("Invalid selection. Try again.")
+        except (ValueError, KeyError):
+            print("Invalid input. Please enter a number.")
 
 def model_exists(name):
     try:
@@ -64,7 +108,15 @@ def endpoint_exists(name):
     except ClientError:
         return False
 
-print("🚀 Deploying with full control...")
+# Get S3 configuration and select model
+S3_BUCKET = config["s3"]["bucket"]
+S3_PRODUCTION_PREFIX = config["s3"]["production_models"]["s3_prefix"]
+
+# Select model interactively
+s3_model_path = select_production_model_interactively(S3_BUCKET, S3_PRODUCTION_PREFIX)
+
+print("\n🚀 Deploying with full control...")
+print(f"📦 Selected model: {s3_model_path}\n")
 
 # ----- Create or update SageMaker Endpoint
 if model_exists(model_name):

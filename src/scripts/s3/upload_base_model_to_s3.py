@@ -1,13 +1,24 @@
 import os
+import sys
 import tarfile
 import boto3
 from dotenv import load_dotenv
 
 load_dotenv()
-DEFAULT_BUCKET = os.getenv("AWS_S3_BUCKET", "")
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+
+from src.config import Config
+
+# ----- Load configuration
+config = Config("./config.yaml")
+
 AWS_PROFILE = os.getenv("AWS_PROFILE", "default")
 
-MODELS_DIR = "./models"
+# Load S3 configuration from config.yaml
+AWS_S3_BUCKET = config["s3"]["bucket"]
+MODELS_DIR = config["s3"]["upload"]["models"]["local_dir"]
+S3_PREFIX = config["s3"]["upload"]["models"]["s3_prefix"]
 
 def list_model_folders(models_dir: str):
     return [f for f in os.listdir(models_dir) if os.path.isdir(os.path.join(models_dir, f))]
@@ -36,7 +47,7 @@ def main():
 
     model_folders = list_model_folders(MODELS_DIR)
     if not model_folders:
-        print("⚠️ No model folders found inside ./models/")
+        print("⚠️ No model folders found inside {MODELS_DIR}/")
         return
 
     print("Available models:\n")
@@ -52,10 +63,8 @@ def main():
         print("⚠️ No valid selection made.")
         return
 
-    bucket = input(f"Enter S3 bucket name [{DEFAULT_BUCKET}]: ").strip() or DEFAULT_BUCKET
-    if not bucket:
-        print("❌ No bucket provided and no AWS_S3_BUCKET in .env.")
-        return
+    print(f"\nUsing S3 bucket: {AWS_S3_BUCKET}")
+    print(f"Uploading to S3 prefix: {S3_PREFIX}")
 
     for folder in selected_folders:
         folder_path = os.path.join(MODELS_DIR, folder)
@@ -66,8 +75,8 @@ def main():
         compress_folder(folder_path, archive_path)
         print(f"✅ Created archive: {archive_path}")
 
-        s3_key = f"models/base/{os.path.basename(archive_path)}"
-        upload_to_s3(archive_path, bucket, s3_key, AWS_PROFILE)
+        s3_key = f"{S3_PREFIX}{os.path.basename(archive_path)}"
+        upload_to_s3(archive_path, AWS_S3_BUCKET, s3_key, AWS_PROFILE)
 
     print("\n🎉 All selected models have been uploaded successfully!")
 

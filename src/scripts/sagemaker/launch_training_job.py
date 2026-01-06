@@ -29,8 +29,57 @@ session = sagemaker.Session(boto_session=boto3_session)
 # ----- Load configuration
 config = Config("./config.yaml")
 
+def list_s3_models(bucket: str, prefix: str) -> list:
+    """List all .tar.gz files in the specified S3 bucket/prefix."""
+    s3 = boto3_session.client('s3')
+    try:
+        response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+        if 'Contents' not in response:
+            return []
+        models = [obj['Key'] for obj in response['Contents'] if obj['Key'].endswith('.tar.gz')]
+        return models
+    except Exception as e:
+        print(f"Error listing S3 models: {e}")
+        return []
 
-BASE_MODEL_PATH     = config["paths"]["base_model"] # S3 path to base model which will be fine-tuned
+def select_model_interactively(bucket: str, prefix: str) -> str:
+    """Prompt user to select a model from S3."""
+    models = list_s3_models(bucket, prefix)
+    
+    if not models:
+        print(f"\n⚠️  No models found in s3://{bucket}/{prefix}")
+        use_default = input("Use default from config.yaml? (y/n): ").strip().lower()
+        if use_default == 'y':
+            return config["paths"]["base_model"]
+        else:
+            sys.exit(1)
+    
+    print("\n📦 Available base models in S3:\n")
+    for i, model in enumerate(models, 1):
+        print(f"  {i}. {model}")
+    print(f"  {len(models) + 1}. Use default from config.yaml")
+    print()
+    
+    while True:
+        try:
+            choice = input(f"Select a model (1-{len(models) + 1}): ").strip()
+            choice_idx = int(choice) - 1
+            
+            if choice_idx == len(models):
+                return config["paths"]["base_model"]
+            elif 0 <= choice_idx < len(models):
+                return f"s3://{bucket}/{models[choice_idx]}"
+            else:
+                print("Invalid selection. Try again.")
+        except (ValueError, KeyError):
+            print("Invalid input. Please enter a number.")
+
+# Get S3 configuration
+S3_BUCKET = config["s3"]["bucket"]
+S3_MODELS_PREFIX = config["s3"]["upload"]["models"]["s3_prefix"]
+
+# Select model interactively
+BASE_MODEL_PATH = select_model_interactively(S3_BUCKET, S3_MODELS_PREFIX)
 
 TRAINING_DATA_PATH  = config["paths"]["training_data"]
 TUNED_MODEL_PATH    = config["paths"]["production_model"]
