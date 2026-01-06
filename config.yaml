@@ -2,15 +2,33 @@ project:
   name: chronos-forecasting
 
 paths:
-  base_model: s3://chronos-forecasting-presmanes/models/base/chronos-bolt-tiny.tar.gz
-  training_data: s3://chronos-forecasting-presmanes/data/Turbine_Data.csv
-  production_model: s3://chronos-forecasting-presmanes/models/fine-tunned/chronos-bolt-tiny-tuned.tar.gz
+  base_model: s3://chronos-presmanes/models/base/chronos-bolt-tiny.tar.gz
+  training_data: s3://chronos-presmanes/data/Turbine_Data.csv
+  production_model: s3://chronos-presmanes/models/fine-tunned/chronos-bolt-tiny-tuned.tar.gz
 
-  dataset_base: s3://chronos-forecasting-presmanes/data/
+  dataset_base: s3://chronos-deployment/data/
+
+s3:
+  bucket: chronos-presmanes
+  upload:
+    models:
+      local_dir: ./models
+      s3_prefix: models/base/
+    data:
+      s3_prefix: data/
+  production_models:
+    s3_prefix: models/
+
+dataset:
+  base_file: \Projects\chronos-sagemaker-forecasting\data\wind-power-forecasting\Turbine_Data.csv
+  processed_file: \Projects\chronos-sagemaker-forecasting\data\wind-power-forecasting/processed/Turbine_data_processed.csv
+  pipeline_file: \Projects\chronos-sagemaker-forecasting\data\wind-power-forecasting/pipeline_file.joblib
+  metadata_file: \Projects\chronos-sagemaker-forecasting\data\wind-power-forecasting/metadata.json
+
 ecr:
   training:
     repo_name: chronos-training
-    image_uri: 296062581113.dkr.ecr.eu-west-1.amazonaws.com/chronos-training:latest
+    image_uri: 619071308424.dkr.ecr.eu-west-1.amazonaws.com/chronos-training:latest
   deployment:
     repo_name: chronos-deployment
 
@@ -18,7 +36,7 @@ training:
   limit_time: 10
 
 sagemaker:
-  instance_type: ml.m5.large
+  instance_type: ml.t2.medium
   instance_count: 1
 
   endpoint_name: chronos-endpoint-prod
