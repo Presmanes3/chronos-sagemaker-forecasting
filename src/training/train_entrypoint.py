@@ -111,14 +111,19 @@ ts_df = TimeSeriesDataFrame.from_data_frame(
 print(f"📊 Training dataset loaded: {len(ts_df)} time steps | columns = {list(ts_df.columns)}")
 
 # ----- Fine-tune the model
-output_dir = "/opt/ml/model/fine_tuned"
+output_dir = "/opt/ml/model" 
 print(f"🏗️  Starting fine-tuning → {output_dir}")
 
+# Configuration aligned with generate_dataset.py
+PREDICTION_LENGTH = 48  
+CONTEXT_LENGTH = 336    
+
 predictor = TimeSeriesPredictor(
-    prediction_length=24,
+    prediction_length=PREDICTION_LENGTH,
     path=output_dir,
     target="ActivePower",
     eval_metric="RMSE",
+    freq="30T",  
 )
 
 try:
@@ -129,9 +134,16 @@ try:
             "Chronos": {
                 "pretrained_model_name": "chronos-bolt-tiny",
                 "model_path": base_model_local,
-                "save_model_pipeline": True,  # ✅ required for SageMaker inference
+                "save_model_pipeline": True,  
+                "context_length": CONTEXT_LENGTH,  # 7 days of context
+                # ✅ FINE-TUNING PARAMETERS - Enable real training
+                "fine_tune": True,
+                "fine_tune_steps": 2000,  # Number of training steps
+                "fine_tune_lr": 5e-5,     # Conservative learning rate
             }
         },
+        num_val_windows=5,  
+        verbosity=2,
     )
     print("✅ Fine-tuning completed successfully.")
 except Exception as e:
@@ -139,21 +151,41 @@ except Exception as e:
     sys.exit(1)
 
 # ----- Embed base model artifacts into fine-tuned model directories
-base_model_dir = Path("/opt/ml/model/base_model/chronos-bolt-tiny")
+# Use the actual base_model_local path that was already verified to exist
+base_model_source = Path(base_model_local)
 target_dir = Path(output_dir) / "models"
 
-for chronos_dir in target_dir.rglob("Chronos*"):
-    embedded_dir = chronos_dir / "base_model_artifacts"
-    embedded_dir.mkdir(exist_ok=True)
-    print(f"📦 Embedding base model artifacts into: {embedded_dir}")
+print(f"\n📦 Embedding base model artifacts from: {base_model_source}")
 
-    for fname in ["config.json", "model.safetensors", "tokenizer.json"]:
-        src = base_model_dir / fname
+# Define all possible base model files to copy
+base_model_files = [
+    "config.json",
+    "model.safetensors",
+    "tokenizer.json",
+    "generation_config.json",
+    "tokenizer_config.json",
+]
+
+for chronos_dir in target_dir.rglob("Chronos*"):
+    if not chronos_dir.is_dir():
+        continue
+        
+    embedded_dir = chronos_dir / "base_model_artifacts"
+    embedded_dir.mkdir(parents=True, exist_ok=True)
+    print(f"\n🎯 Target directory: {embedded_dir}")
+
+    copied_count = 0
+    for fname in base_model_files:
+        src = base_model_source / fname
         if src.exists():
-            shutil.copy(src, embedded_dir / fname)
-            print(f"✅ Copied {fname}")
+            dest = embedded_dir / fname
+            shutil.copy2(src, dest)
+            print(f"   ✅ Copied: {fname} ({src.stat().st_size / 1024:.1f} KB)")
+            copied_count += 1
         else:
-            print(f"⚠️ Missing {fname}, skipped.")
+            print(f"   ⚠️ Missing: {fname}")
+    
+    print(f"\n✅ Embedded {copied_count}/{len(base_model_files)} base model files")
 
 # ----- Verify fine-tuned model artifacts
 chronos_dir = Path(output_dir)
@@ -169,34 +201,38 @@ if list(chronos_dir.rglob("config.json")):
 else:
     print("⚠️ Warning: No Chronos configuration files found. Inference may fail.")
 
-# ----- Finalize model export
+# ----- Verify model structure
 print("\n========================================================")
-print("📦 FINALIZING MODEL EXPORT")
-print("SageMaker will now automatically package everything under:")
-print("   /opt/ml/model/")
-print("and upload it to the designated S3 output path.")
-print("--------------------------------------------------------")
-
-if not Path("/opt/ml/model/base_model").exists():
-    print("⚠️ Base model directory missing under /opt/ml/model/")
-if not Path("/opt/ml/model/fine_tuned").exists():
-    print("⚠️ Fine-tuned model directory missing under /opt/ml/model/")
-
-print("✅ All steps completed successfully.")
-print("========================================================\n")
-
-# ----- OPTIONAL: Create tar.gz and upload to S3 for manual deployment
-print("\n========================================================")
-print("📦 Creating final model.tar.gz for manual upload...")
+print("📦 VERIFYING MODEL STRUCTURE")
 print("========================================================")
 
-model_root = "/opt/ml/model"
+model_dir = Path(output_dir)
+print(f"\n📁 Model directory: {model_dir}")
+print(f"\n📋 Contents:")
+for item in model_dir.iterdir():
+    if item.is_file():
+        print(f"  📄 {item.name} ({item.stat().st_size / 1024:.1f} KB)")
+    else:
+        print(f"  📁 {item.name}/")
+
+print("\n✅ Model training completed successfully.")
+print("========================================================\n")
+
+# ----- Create clean tar.gz with proper structure
+print("\n========================================================")
+print("📦 Creating model.tar.gz with clean structure...")
+print("========================================================")
+
 local_tar_path = "/tmp/model.tar.gz"
 
-# Create tar.gz of full /opt/ml/model
+# Create tar.gz with clean structure (files at root)
+# ✅ IMPORTANT: Include base_model/ directory - AutoGluon references it during inference
 with tarfile.open(local_tar_path, "w:gz") as tar:
-    tar.add(model_root, arcname=".")
-    print(f"✅ Created archive at: {local_tar_path}")
+    for item in Path(output_dir).iterdir():
+        tar.add(str(item), arcname=item.name)
+        print(f"✅ Added to archive: {item.name}")
+
+print(f"✅ Archive created at: {local_tar_path}")
 
 # Parse tuned model S3 path
 if not TUNED_MODEL_PATH.startswith("s3://"):

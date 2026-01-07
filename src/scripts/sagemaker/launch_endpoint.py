@@ -22,8 +22,8 @@ role_arn          = os.getenv("AWS_SAGEMAKER_ROLE_ARN")
 ecr_image_uri     = os.getenv("AWS_ECR_DEPLOYMENT_IMAGE_URI")
 
 endpoint_name     = config["sagemaker"]["endpoint_name"]
-instance_type     = config["sagemaker"]["instance_type"]
-instance_count    = config["sagemaker"]["instance_count"]
+instance_type     = config["sagemaker"]["inference"]["instance_type"]
+instance_count    = config["sagemaker"]["inference"]["instance_count"]
 
 region            = os.getenv("AWS_REGION", "eu-west-1")
 
@@ -43,33 +43,57 @@ sm = session.client("sagemaker")
 sagemaker_session = sagemaker.Session(boto_session=session)
 
 def list_s3_production_models(bucket: str, prefix: str) -> list:
-    """List all .tar.gz files in the specified S3 bucket/prefix."""
+    """List all .tar.gz model files with metadata."""
     s3 = session.client('s3')
     try:
         response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
         if 'Contents' not in response:
             return []
-        models = [obj['Key'] for obj in response['Contents'] if obj['Key'].endswith('.tar.gz')]
+        
+        models = []
+        for obj in response['Contents']:
+            if obj['Key'].endswith('.tar.gz'):
+                models.append({
+                    'key': obj['Key'],
+                    'name': os.path.basename(obj['Key']),
+                    'size_mb': obj['Size'] / (1024 ** 2),
+                    'last_modified': obj['LastModified']
+                })
+        
+        # Sort by modification date (newest first)
+        models.sort(key=lambda x: x['last_modified'], reverse=True)
         return models
+        
     except Exception as e:
-        print(f"Error listing S3 models: {e}")
+        print(f"❌ Error listing S3 models: {e}")
         return []
 
 def select_production_model_interactively(bucket: str, prefix: str) -> str:
-    """Prompt user to select a production model from S3."""
+    """Prompt user to select a production model with rich metadata display."""
     models = list_s3_production_models(bucket, prefix)
     
     if not models:
         print(f"\n⚠️  No production models found in s3://{bucket}/{prefix}")
-        use_default = input("Use default from config.yaml? (y/n): ").strip().lower()
+        print(f"\n💡 Train a model first using: python src/scripts/sagemaker/launch_training_job.py")
+        use_default = input("\nUse default from config.yaml? (y/n): ").strip().lower()
         if use_default == 'y':
             return config["paths"]["production_model"]
         else:
+            print("\n❌ Deployment cancelled.")
             sys.exit(1)
     
-    print("\n🚀 Available production models in S3:\n")
+    print("\n" + "="*80)
+    print("🚀 AVAILABLE PRODUCTION MODELS")
+    print("="*80)
+    print(f"\nS3 Location: s3://{bucket}/{prefix}")
+    print(f"Total models: {len(models)}\n")
+    
     for i, model in enumerate(models, 1):
-        print(f"  {i}. {model}")
+        modified = model['last_modified'].strftime('%Y-%m-%d %H:%M:%S')
+        print(f"  {i}. {model['name']}")
+        print(f"     📊 Size: {model['size_mb']:.2f} MB | 📅 Modified: {modified}")
+        print()
+    
     print(f"  {len(models) + 1}. Use default from config.yaml")
     print()
     
@@ -79,13 +103,18 @@ def select_production_model_interactively(bucket: str, prefix: str) -> str:
             choice_idx = int(choice) - 1
             
             if choice_idx == len(models):
-                return config["paths"]["production_model"]
+                default_path = config["paths"]["production_model"]
+                print(f"\n✅ Using default: {default_path}")
+                return default_path
             elif 0 <= choice_idx < len(models):
-                return f"s3://{bucket}/{models[choice_idx]}"
+                selected = models[choice_idx]
+                model_path = f"s3://{bucket}/{selected['key']}"
+                print(f"\n✅ Selected: {selected['name']}")
+                return model_path
             else:
-                print("Invalid selection. Try again.")
+                print("❌ Invalid selection. Please try again.")
         except (ValueError, KeyError):
-            print("Invalid input. Please enter a number.")
+            print("❌ Invalid input. Please enter a number.")
 
 def model_exists(name):
     try:
