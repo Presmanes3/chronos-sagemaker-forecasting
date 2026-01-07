@@ -1,30 +1,27 @@
 FROM autogluon/autogluon:1.3.1-cpu-framework-ubuntu22.04-py3.11
 
-# Folders
-WORKDIR /opt/ml/model
-
 WORKDIR /opt/ml/code
 
 # Install dependencies
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     build-essential \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-
-# Copy all Python files from deployment directory
+# Copy application code
 COPY *.py .
 
-# Expose port
+# Expose inference port
 EXPOSE 8080
 
-# Set env model dir
-ENV MODEL_DIR=/opt/ml/model/fine_tuned
-
-
+# Environment variables
+# SageMaker will extract model.tar.gz to /opt/ml/model/
+ENV MODEL_DIR=/opt/ml/model
+ENV PYTHONUNBUFFERED=1
 
 ENTRYPOINT ["python", "serve.py"]

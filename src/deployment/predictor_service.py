@@ -7,7 +7,7 @@ import tempfile
 from typing import Dict, Any, Optional
 
 from autogluon.timeseries import TimeSeriesDataFrame, TimeSeriesPredictor
-from .logger_config import setup_logger
+from logger_config import setup_logger
 
 
 logger = setup_logger()
@@ -44,6 +44,29 @@ class ChronosPredictorService:
                 "Loading model from read-only directory",
                 extra={"request_id": "startup", "model_path": model_dir}
             )
+            
+            # Verify the directory exists
+            if not os.path.exists(model_dir):
+                raise FileNotFoundError(f"Model directory does not exist: {model_dir}")
+            
+            # Verify it contains required AutoGluon files
+            required_files = ["predictor.pkl"]
+            missing_files = [f for f in required_files if not os.path.exists(os.path.join(model_dir, f))]
+            if missing_files:
+                logger.error(
+                    f"Missing required model files: {missing_files}",
+                    extra={"request_id": "startup", "model_path": model_dir}
+                )
+                logger.error(
+                    f"Contents of {model_dir}:",
+                    extra={"request_id": "startup"}
+                )
+                for item in os.listdir(model_dir):
+                    logger.error(
+                        f"  - {item}",
+                        extra={"request_id": "startup"}
+                    )
+                raise FileNotFoundError(f"Model directory missing required files: {missing_files}")
             
             # Copy model to writable /tmp directory (required by AutoGluon)
             self._tmp_model_dir = os.path.join(tempfile.gettempdir(), "chronos_model_copy")

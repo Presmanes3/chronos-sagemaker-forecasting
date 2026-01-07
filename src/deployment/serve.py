@@ -7,46 +7,118 @@ using Amazon Chronos models fine-tuned with AutoGluon. It includes:
 - Model metadata validation
 - RESTful endpoints with Pydantic validation
 - SageMaker compatibility (/ping, /invocations)
+
+Note: All models (baseline and fine-tuned) must be in AutoGluon format (contain predictor.pkl).
+Use create_baseline_model.py to create baseline models in the correct format.
 """
 
 import os
-import sys
 import uuid
 import uvicorn
 from contextlib import asynccontextmanager
 from typing import Optional
+from pathlib import Path
 
 from fastapi import FastAPI, Request, HTTPException, Header
-from fastapi.responses import JSONResponse
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-
-from .models import (
+from models import (
     PredictionRequest,
     PredictionResponse,
     ModelInfoResponse,
     HealthResponse
 )
-from .predictor_service import ChronosPredictorService
-from .utils import parse_input_data, format_output
-from .logger_config import setup_logger
+from predictor_service import ChronosPredictorService
+from utils import parse_input_data, format_output
+from logger_config import setup_logger
 
 
 # ==================== Configuration ====================
-MODEL_PATH = "/opt/ml/model/fine_tuned"  # SageMaker model mount point
+MODEL_BASE_PATH = os.getenv("MODEL_DIR", "/opt/ml/model")
 logger = setup_logger()
+
+
+def find_model_path(base_dir: str = MODEL_BASE_PATH) -> str:
+    """
+    Find AutoGluon model directory containing predictor.pkl.
+    
+    Args:
+        base_dir: Base directory to search (default: /opt/ml/model)
+    
+    Returns:
+        Path to valid AutoGluon model directory
+    
+    Raises:
+        FileNotFoundError: If no valid model found
+    """
+    base_path = Path(base_dir)
+    
+    logger.info(
+        f"Searching for model in: {base_path}",
+        extra={"request_id": "startup", "search_path": str(base_path)}
+    )
+    
+    # Check root directory first
+    if (base_path / "predictor.pkl").exists():
+        logger.info(
+            f"Model found at root: {base_path}",
+            extra={"request_id": "startup", "model_path": str(base_path)}
+        )
+        return str(base_path)
+    
+    # Search subdirectories
+    for predictor_file in base_path.rglob("predictor.pkl"):
+        model_dir = predictor_file.parent
+        logger.info(
+            f"Model found in subdirectory: {model_dir}",
+            extra={"request_id": "startup", "model_path": str(model_dir)}
+        )
+        return str(model_dir)
+    
+    # Model not found - log directory structure for debugging
+    logger.error(
+        f"No valid AutoGluon model found in {base_path}",
+        extra={"request_id": "startup", "search_path": str(base_path)}
+    )
+    
+    if base_path.exists():
+        logger.error("Directory structure:", extra={"request_id": "startup"})
+        for item in sorted(base_path.rglob("*"))[:50]:  # Limit to 50 items
+            rel_path = item.relative_to(base_path)
+            item_type = "📁" if item.is_dir() else "📄"
+            logger.error(
+                f"  {item_type} {rel_path}",
+                extra={"request_id": "startup"}
+            )
+    else:
+        logger.error(
+            f"Base directory does not exist: {base_path}",
+            extra={"request_id": "startup"}
+        )
+    
+    raise FileNotFoundError(
+        f"No valid AutoGluon model found. Expected predictor.pkl in {base_path} or subdirectories.\n"
+        f"Note: Use create_baseline_model.py to create baseline models in AutoGluon format."
+    )
+
+
+MODEL_PATH = None
 
 
 # ==================== FastAPI Application ====================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifecycle manager - loads model at startup, cleans up at shutdown."""
+    global MODEL_PATH
+    
     logger.info(
         "Application starting up",
-        extra={"request_id": "startup", "model_path": MODEL_PATH}
+        extra={"request_id": "startup", "model_base_path": MODEL_BASE_PATH}
     )
     
     try:
+        # Find model location
+        MODEL_PATH = find_model_path()
+        
         # Initialize predictor service
         service = ChronosPredictorService()
         service.load_model(MODEL_PATH)
@@ -76,7 +148,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Chronos Forecasting API",
     description="Production-ready time series forecasting API using Amazon Chronos + AutoGluon",
-    version="2.0.0",
+    version="3.0.0",
     lifespan=lifespan
 )
 
@@ -117,18 +189,17 @@ async def model_info():
     try:
         service: ChronosPredictorService = app.state.predictor_service
         info = service.get_info()
-        
         return info
         
     except Exception as e:
         logger.error(
             "Failed to retrieve model info",
-            extra={"request_id": str(uuid.uuid4()), "model_path": "", "error": str(e)}
+            extra={"request_id": str(uuid.uuid4()), "model_path": MODEL_PATH, "error": str(e)}
         )
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve model info: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve model info")
 
 
-@app.post("/predict", response_model=PredictionResponse, tags=["Prediction"])
+@app.post("/predict", tags=["Inference"])
 async def predict(
     request: Request,
     x_request_id: Optional[str] = Header(None, alias="X-Request-ID")
@@ -137,7 +208,7 @@ async def predict(
     Generate time series forecasts.
     
     Accepts historical time series data and returns predictions for the configured
-    forecast horizon. Input must include item_id, timestamp, and ActivePower columns.
+    forecast horizon. Input must include item_id, timestamp, and target columns.
     
     **Request Body:** JSON array of time series observations
     
@@ -163,20 +234,20 @@ async def predict(
     except ValueError as e:
         logger.warning(
             "Invalid input data",
-            extra={"request_id": request_id, "model_path": "", "error": str(e)}
+            extra={"request_id": request_id, "model_path": MODEL_PATH, "error": str(e)}
         )
         raise HTTPException(status_code=400, detail=str(e))
         
     except Exception as e:
         logger.error(
             "Prediction request failed",
-            extra={"request_id": request_id, "model_path": "", "error": str(e)},
+            extra={"request_id": request_id, "model_path": MODEL_PATH, "error": str(e)},
             exc_info=True
         )
-        raise HTTPException(status_code=500, detail=f"Prediction failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
 
 
-@app.post("/invocations", tags=["SageMaker Compatibility"])
+@app.post("/invocations", tags=["Inference"])
 async def invocations(
     request: Request,
     x_request_id: Optional[str] = Header(None, alias="X-Request-ID")
@@ -187,37 +258,8 @@ async def invocations(
     This endpoint provides backward compatibility with AWS SageMaker's default
     invocation route. It's functionally identical to /predict.
     """
-    request_id = x_request_id or str(uuid.uuid4())
-    
-    try:
-        service: ChronosPredictorService = app.state.predictor_service
-        
-        # Parse input
-        body = await request.body()
-        ts_df = parse_input_data(body, request_id)
-        
-        # Execute prediction
-        predictions = service.predict(ts_df, request_id)
-        
-        # Format output
-        result = format_output(predictions, request_id)
-        
-        return JSONResponse(content=result, status_code=200)
-        
-    except ValueError as e:
-        logger.warning(
-            "Invalid input data",
-            extra={"request_id": request_id, "model_path": "", "error": str(e)}
-        )
-        return JSONResponse(content={"error": str(e)}, status_code=400)
-        
-    except Exception as e:
-        logger.error(
-            "Inference request failed",
-            extra={"request_id": request_id, "model_path": "", "error": str(e)},
-            exc_info=True
-        )
-        return JSONResponse(content={"error": str(e)}, status_code=500)
+    # Reuse predict endpoint logic
+    return await predict(request, x_request_id)
 
 
 # ==================== Application Entry Point ====================

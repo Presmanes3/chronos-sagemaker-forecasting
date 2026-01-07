@@ -6,7 +6,7 @@ import pandas as pd
 from typing import Dict, Any
 
 from autogluon.timeseries import TimeSeriesDataFrame
-from .logger_config import setup_logger
+from logger_config import setup_logger
 
 
 logger = setup_logger()
