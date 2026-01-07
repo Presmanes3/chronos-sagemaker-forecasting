@@ -20,10 +20,10 @@ s3:
     s3_prefix: models/
 
 dataset:
-  base_file: \Projects\chronos-sagemaker-forecasting\data\wind-power-forecasting\Turbine_Data.csv
-  processed_file: \Projects\chronos-sagemaker-forecasting\data\wind-power-forecasting/processed/Turbine_data_processed.csv
-  pipeline_file: \Projects\chronos-sagemaker-forecasting\data\wind-power-forecasting/pipeline_file.joblib
-  metadata_file: \Projects\chronos-sagemaker-forecasting\data\wind-power-forecasting/metadata.json
+  base_file: ./data/wind-power-forecasting/Turbine_Data.csv
+  processed_file: ./data/wind-power-forecasting/processed/Turbine_data_processed.parquet
+  pipeline_file: ./data/wind-power-forecasting/pipeline_file.joblib
+  metadata_file: ./data/wind-power-forecasting/metadata.json
 
 ecr:
   training:
@@ -32,11 +32,12 @@ ecr:
   deployment:
     repo_name: chronos-deployment
 
-training:
-  limit_time: 10
-
 sagemaker:
-  instance_type: ml.t2.medium
-  instance_count: 1
-
-  endpoint_name: chronos-endpoint-prod
+  training:
+    limit_time: 300  # ✅ 5 minutes for testing (use 3600 for full fine-tuning)
+    instance_type: ml.g4dn.xlarge  # ✅ GPU instance (NVIDIA T4, 16GB) for fine-tuning
+    instance_count: 1
+  inference:
+    instance_type: ml.t2.medium  # ✅ CPU instance for inference (cost-effective)
+    instance_count: 1
+  endpoint_name: chronos-endpoint-prod-6
