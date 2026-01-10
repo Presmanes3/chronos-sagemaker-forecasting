@@ -200,15 +200,15 @@ training_instance_type = config["sagemaker"]["training"]["instance_type"]
 training_instance_count = config["sagemaker"]["training"]["instance_count"]
 
 print("\n  Training Configuration:")
-print(f"  • Time Limit:        {TRAINING_LIMIT_TIME} seconds")
-print(f"  • Instance Type:     {training_instance_type}")
-print(f"  • Instance Count:    {training_instance_count}")
-print("\n🔧 AWS Resources:")
-print(f"  • Profile:           {AWS_PROFILE}")
-print(f"  • ECR Image URI:     {ECR_URI}")
-print(f"  • IAM Role ARN:      {ROLE}")
+print(f"  * Time Limit:        {TRAINING_LIMIT_TIME} seconds")
+print(f"  * Instance Type:     {training_instance_type}")
+print(f"  * Instance Count:    {training_instance_count}")
+print("\nAWS Resources:")
+print(f"  * Profile:           {AWS_PROFILE}")
+print(f"  * ECR Image URI:     {ECR_URI}")
+print(f"  * IAM Role ARN:      {ROLE}")
 print("\n" + "=" * 80)
-print("🚀 Launching training job...")
+print("Launching training job...")
 print("=" * 80 + "\n")
 
 estimator = sagemaker.estimator.Estimator(

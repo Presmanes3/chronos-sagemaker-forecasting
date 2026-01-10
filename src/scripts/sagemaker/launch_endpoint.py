@@ -65,7 +65,7 @@ def list_s3_production_models(bucket: str, prefix: str) -> list:
         return models
         
     except Exception as e:
-        print(f"❌ Error listing S3 models: {e}")
+        print(f"Error listing S3 models: {e}")
         return []
 
 def select_production_model_interactively(bucket: str, prefix: str) -> str:
@@ -73,17 +73,17 @@ def select_production_model_interactively(bucket: str, prefix: str) -> str:
     models = list_s3_production_models(bucket, prefix)
     
     if not models:
-        print(f"\n⚠️  No production models found in s3://{bucket}/{prefix}")
-        print(f"\n💡 Train a model first using: python src/scripts/sagemaker/launch_training_job.py")
+        print(f"\nNo production models found in s3://{bucket}/{prefix}")
+        print(f"\nTrain a model first using: python src/scripts/sagemaker/launch_training_job.py")
         use_default = input("\nUse default from config.yaml? (y/n): ").strip().lower()
         if use_default == 'y':
             return config["paths"]["production_model"]
         else:
-            print("\n❌ Deployment cancelled.")
+            print("\nDeployment cancelled.")
             sys.exit(1)
     
     print("\n" + "="*80)
-    print("🚀 AVAILABLE PRODUCTION MODELS")
+    print("AVAILABLE PRODUCTION MODELS")
     print("="*80)
     print(f"\nS3 Location: s3://{bucket}/{prefix}")
     print(f"Total models: {len(models)}\n")
@@ -91,7 +91,7 @@ def select_production_model_interactively(bucket: str, prefix: str) -> str:
     for i, model in enumerate(models, 1):
         modified = model['last_modified'].strftime('%Y-%m-%d %H:%M:%S')
         print(f"  {i}. {model['name']}")
-        print(f"     📊 Size: {model['size_mb']:.2f} MB | 📅 Modified: {modified}")
+        print(f"     Size: {model['size_mb']:.2f} MB | Modified: {modified}")
         print()
     
     print(f"  {len(models) + 1}. Use default from config.yaml")
@@ -104,17 +104,17 @@ def select_production_model_interactively(bucket: str, prefix: str) -> str:
             
             if choice_idx == len(models):
                 default_path = config["paths"]["production_model"]
-                print(f"\n✅ Using default: {default_path}")
+                print(f"\nUsing default: {default_path}")
                 return default_path
             elif 0 <= choice_idx < len(models):
                 selected = models[choice_idx]
                 model_path = f"s3://{bucket}/{selected['key']}"
-                print(f"\n✅ Selected: {selected['name']}")
+                print(f"\nSelected: {selected['name']}")
                 return model_path
             else:
-                print("❌ Invalid selection. Please try again.")
+                print("Invalid selection. Please try again.")
         except (ValueError, KeyError):
-            print("❌ Invalid input. Please enter a number.")
+            print("Invalid input. Please enter a number.")
 
 def model_exists(name):
     try:
@@ -144,14 +144,14 @@ S3_PRODUCTION_PREFIX = config["s3"]["production_models"]["s3_prefix"]
 # Select model interactively
 s3_model_path = select_production_model_interactively(S3_BUCKET, S3_PRODUCTION_PREFIX)
 
-print("\n🚀 Deploying with full control...")
-print(f"📦 Selected model: {s3_model_path}\n")
+print("\nDeploying with full control...")
+print(f"Selected model: {s3_model_path}\n")
 
 # ----- Create or update SageMaker Endpoint
 if model_exists(model_name):
-    print(f"ℹ️ Model already exists: {model_name} (skipping creation)")
+    print(f"Model already exists: {model_name} (skipping creation)")
 else:
-    print(f"📦 Creating Model: {model_name}")
+    print(f"Creating Model: {model_name}")
     model = Model(
         name                = model_name,
         image_uri           = ecr_image_uri,
@@ -164,11 +164,11 @@ else:
 
 # ----- Create or update EndpointConfig
 if config_exists(config_name):
-    print(f"ℹ️ EndpointConfig already exists: {config_name} (recreating)")
+    print(f"EndpointConfig already exists: {config_name} (recreating)")
 
     sm.delete_endpoint_config(EndpointConfigName=config_name)
 
-print(f"⚙️ Creating EndpointConfig: {config_name}")
+print(f"Creating EndpointConfig: {config_name}")
 
 sm.create_endpoint_config(
     EndpointConfigName=config_name,
@@ -184,7 +184,7 @@ sm.create_endpoint_config(
 
 # ----- Create or update Endpoint
 if endpoint_exists(endpoint_name):
-    print(f"🔄 Updating existing endpoint: {endpoint_name}")
+    print(f"Updating existing endpoint: {endpoint_name}")
 
     sm.update_endpoint(
         EndpointName        = endpoint_name,
@@ -192,13 +192,13 @@ if endpoint_exists(endpoint_name):
     )
 
 else:
-    print(f"🚀 Creating new endpoint: {endpoint_name}")
+    print(f"Creating new endpoint: {endpoint_name}")
 
     sm.create_endpoint(
         EndpointName        = endpoint_name,
         EndpointConfigName  = config_name
     )
 
-print("\n✅ Deployment succeeded!")
+print("\nDeployment succeeded!")
 print(f"Endpoint: {endpoint_name}")
 print("You can now invoke it via boto3.sagemaker-runtime.")

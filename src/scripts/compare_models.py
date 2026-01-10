@@ -37,7 +37,7 @@ config = Config("./config.yaml")
 
 def load_test_data(csv_path: str, item_id_col: str = None, timestamp_col: str = None):
     """Load and prepare test data."""
-    print(f"\n📥 Loading test data from: {csv_path}")
+    print(f"\nLoading test data from: {csv_path}")
     df = pd.read_csv(csv_path)
     
     # Auto-detect columns
@@ -47,10 +47,10 @@ def load_test_data(csv_path: str, item_id_col: str = None, timestamp_col: str = 
                 item_id_col = col
                 break
         if item_id_col is None:
-            # ✅ Use 'Turbine_1' to match training data (see train_entrypoint.py)
+            # Use 'Turbine_1' to match training data (see train_entrypoint.py)
             df['item_id'] = 'Turbine_1'
             item_id_col = 'item_id'
-            print(f"   ⚠️ No item_id column found, using default: 'Turbine_1'")
+            print(f"   Warning: No item_id column found, using default: 'Turbine_1'")
     
     if timestamp_col is None:
         for col in ['timestamp', 'Timestamp', 'date', 'Unnamed: 0']:
@@ -60,7 +60,7 @@ def load_test_data(csv_path: str, item_id_col: str = None, timestamp_col: str = 
     
     df[timestamp_col] = pd.to_datetime(df[timestamp_col])
     
-    print(f"✅ Loaded {len(df)} rows")
+    print(f"Loaded {len(df)} rows")
     print(f"   Columns: {list(df.columns)}")
     print(f"   Date range: {df[timestamp_col].min()} to {df[timestamp_col].max()}")
     
@@ -69,7 +69,7 @@ def load_test_data(csv_path: str, item_id_col: str = None, timestamp_col: str = 
 
 def predict_with_sagemaker(data: list, endpoint_name: str, region: str = "eu-west-1", profile: str = None):
     """Make predictions using SageMaker endpoint with proper AWS authentication."""
-    print(f"\n🔮 Predicting with SageMaker endpoint: {endpoint_name}")
+    print(f"\nPredicting with SageMaker endpoint: {endpoint_name}")
     
     try:
         # Create boto3 session with authentication
@@ -81,22 +81,22 @@ def predict_with_sagemaker(data: list, endpoint_name: str, region: str = "eu-wes
         # Use SageMaker Runtime client (handles authentication automatically)
         runtime = session.client('sagemaker-runtime')
         
-        # ✅ The endpoint expects a plain JSON array of objects (see deployment/sample_input.json)
+        # The endpoint expects a plain JSON array of objects (see deployment/sample_input.json)
         # Each object must have: item_id, timestamp, and the target column (e.g., ActivePower)
         # NO wrapping needed - just send the list directly
         
-        # ⚠️ DIAGNOSTIC: Try sending fewer data points first
+        # DIAGNOSTIC: Try sending fewer data points first
         # AutoGluon might have issues with too many context points
         max_context = 100  # Start with 100 points for testing
         if len(data) > max_context:
-            print(f"⚠️ Reducing context from {len(data)} to {max_context} points for testing")
+            print(f"Warning: Reducing context from {len(data)} to {max_context} points for testing")
             data_to_send = data[-max_context:]  # Use most recent points
         else:
             data_to_send = data
         
         payload = json.dumps(data_to_send)
         
-        print(f"📤 Sending {len(data_to_send)} data points")
+        print(f"Sending {len(data_to_send)} data points")
         print(f"   Sample (first): {data_to_send[0] if data_to_send else 'N/A'}")
         print(f"   Sample (last): {data_to_send[-1] if data_to_send else 'N/A'}")
         
@@ -109,11 +109,11 @@ def predict_with_sagemaker(data: list, endpoint_name: str, region: str = "eu-wes
         
         # Parse response
         result = json.loads(response['Body'].read().decode())
-        print(f"✅ SageMaker prediction successful")
+        print(f"SageMaker prediction successful")
         return result
             
     except Exception as e:
-        print(f"❌ SageMaker request failed: {e}")
+        print(f"SageMaker request failed: {e}")
         import traceback
         traceback.print_exc()
         return None
@@ -125,7 +125,7 @@ def predict_with_baseline(
     prediction_length: int = 24
 ):
     """Make predictions using local baseline Chronos model."""
-    print(f"\n🔮 Predicting with baseline Chronos model: {model_path}")
+    print(f"\nPredicting with baseline Chronos model: {model_path}")
     
     try:
         # Load pipeline
@@ -146,11 +146,11 @@ def predict_with_baseline(
         # Extract median prediction
         median_pred = quantiles[0, :, 1].numpy()
         
-        print(f"✅ Baseline prediction successful")
+        print(f"Baseline prediction successful")
         return median_pred
         
     except Exception as e:
-        print(f"❌ Baseline prediction failed: {e}")
+        print(f"Baseline prediction failed: {e}")
         import traceback
         traceback.print_exc()
         return None
@@ -327,14 +327,14 @@ def plot_comparison(
                  fontsize=16, fontweight='bold', y=0.995)
     
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
-    print(f"\n💾 Comparison plot saved: {output_path}")
+    print(f"\nComparison plot saved: {output_path}")
     
     plt.show()
 
 
 def main(args):
     print("\n" + "="*80)
-    print("🔬 MODEL COMPARISON: SAGEMAKER vs BASELINE")
+    print("MODEL COMPARISON: SAGEMAKER vs BASELINE")
     print("="*80)
     
     # Load test data
@@ -349,7 +349,7 @@ def main(args):
     prediction_length = args.prediction_length
     
     if len(df) < context_length + prediction_length:
-        print(f"\n⚠️ Warning: Test data has only {len(df)} rows")
+        print(f"\nWarning: Test data has only {len(df)} rows")
         print(f"   Requested: {context_length} context + {prediction_length} prediction")
         context_length = len(df) - prediction_length
         print(f"   Adjusted context_length to: {context_length}")
@@ -357,20 +357,20 @@ def main(args):
     # Prepare data
     target_col = args.target_column
     if target_col not in df.columns:
-        print(f"\n❌ Target column '{target_col}' not found in data")
+        print(f"\nTarget column '{target_col}' not found in data"))
         print(f"   Available columns: {list(df.columns)}")
         sys.exit(1)
     
     historical_values = df[target_col].values[:context_length]
     actual_future = df[target_col].values[context_length:context_length + prediction_length]
     
-    print(f"\n📊 Data split:")
+    print(f"\nData split:")
     print(f"   Historical (context): {len(historical_values)} points")
     print(f"   Future (to predict):  {len(actual_future)} points")
     
     # Prepare SageMaker payload
     sagemaker_data = []
-    # ✅ Get the actual item_id from the data (should be 'Turbine_1')
+    # Get the actual item_id from the data (should be 'Turbine_1')
     item_id = str(df[item_id_col].iloc[0])
     print(f"   Using item_id: '{item_id}'")
     
@@ -390,7 +390,7 @@ def main(args):
             sagemaker_data,
             config["sagemaker"]["endpoint_name"],
             args.region,
-            args.aws_profile  # ✅ Pass AWS profile
+            args.aws_profile
         )
         
         if sagemaker_result and 'predictions' in sagemaker_result:
@@ -415,7 +415,7 @@ def main(args):
         )
         metrics_list.append(sm_metrics)
         
-        print(f"\n📊 SageMaker Metrics:")
+        print(f"\nSageMaker Metrics:")
         for key, value in sm_metrics.items():
             if key != 'model':
                 print(f"   {key}: {value:.4f}")
@@ -428,7 +428,7 @@ def main(args):
         )
         metrics_list.append(bl_metrics)
         
-        print(f"\n📊 Baseline Metrics:")
+        print(f"\nBaseline Metrics:")
         for key, value in bl_metrics.items():
             if key != 'model':
                 print(f"   {key}: {value:.4f}")
@@ -441,9 +441,9 @@ def main(args):
         
         print(f"\n{'='*80}")
         if improvement > 0:
-            print(f"✅ Fine-tuning IMPROVED RMSE by {improvement:.2f}%")
+            print(f"Fine-tuning IMPROVED RMSE by {improvement:.2f}%")
         else:
-            print(f"⚠️ Fine-tuning DEGRADED RMSE by {abs(improvement):.2f}%")
+            print(f"Fine-tuning DEGRADED RMSE by {abs(improvement):.2f}%")
         print(f"{'='*80}")
     
     # Create comparison plots
@@ -463,10 +463,10 @@ def main(args):
         metrics_output = Path(args.output_plot).parent / "comparison_metrics.json"
         with open(metrics_output, 'w') as f:
             json.dump(metrics_list, f, indent=2)
-        print(f"💾 Metrics saved: {metrics_output}")
+        print(f"Metrics saved: {metrics_output}")
     
     print("\n" + "="*80)
-    print("✅ COMPARISON COMPLETE")
+    print("COMPARISON COMPLETE")
     print("="*80 + "\n")
 
 

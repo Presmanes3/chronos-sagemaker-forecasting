@@ -1,51 +1,139 @@
-# 🕒 Time Series Forecasting with Amazon SageMaker & Hugging Face Chronos
+# Time Series Forecasting with Amazon SageMaker & Chronos
 
-This project demonstrates how to build a **minimal yet production-ready pipeline** for **time series forecasting** using **Amazon SageMaker** and the [Chronos-bolt-tiny](https://huggingface.co/amazon/chronos-bolt-tiny) model from **Hugging Face**.
+Production-ready pipeline for time series forecasting using Amazon SageMaker and [Chronos-bolt-tiny](https://huggingface.co/amazon/chronos-bolt-tiny).
 
-The original repository of Chronos can be found [here](https://github.com/amazon-science/chronos-forecasting/tree/main).
+Original Chronos repository: [amazon-science/chronos-forecasting](https://github.com/amazon-science/chronos-forecasting)
 
-## 🎯 Project Overview
+## Overview
 
-The goal of this project is to **fine-tune**, **deploy**, and **serve** a Hugging Face model for time series prediction using **SageMaker training and inference infrastructure**, and finally interact with it via a **Streamlit web interface**.
+End-to-end ML pipeline for time series prediction:
 
-The workflow demonstrates the complete lifecycle of an ML model:
 1. Data preparation and upload to S3
-2. Model fine-tuning on SageMaker
-3. Model deployment as an API endpoint
-4. Local Docker-based inference using Uvicorn and FastAPI
-5. Frontend interaction with Streamlit
+2. Model fine-tuning on SageMaker (AutoGluon + Chronos)
+3. Model deployment as REST API endpoint
+4. Local Docker-based inference (FastAPI + Uvicorn)
+5. Model comparison and evaluation
 
-## 🧠 Model
+## Model
 
-We use **[`amazon/chronos-bolt-tiny`](https://huggingface.co/amazon/chronos-bolt-tiny)** — a lightweight, transformer-based model specialized in **time series forecasting**.
+[`amazon/chronos-bolt-tiny`](https://huggingface.co/amazon/chronos-bolt-tiny) - Lightweight transformer model for time series forecasting.
 
-Chronos models are capable of:
+Features:
 - Multivariate forecasting
-- Handling missing values
-- Capturing temporal dependencies
-- Fast inference even on CPU instances
+- Missing value handling
+- Temporal dependency capture
+- Fast CPU inference
 
-## TODO
+## Project Structure
 
-- [X] EDA for testing base model locally.
-- [X] Create training script with Autgluon locally.
-- [X] Create training script with Autgluon using a training job in SageMaker.
-- [X] Create script to deploy model to SageMaker endpoint.
-- [X] Create script to test inference endpoint.
-- [ ] Create Streamlit app for user interaction.
+```
+src/
+├── config.py                    # Configuration loader
+├── deployment/                  # Inference service
+│   ├── serve.py                 # FastAPI application
+│   ├── predictor_service.py     # AutoGluon predictor wrapper
+│   ├── models.py                # Pydantic request/response models
+│   ├── utils.py                 # Data parsing utilities
+│   └── dockerfile               # Deployment container
+├── training/                    # Training job
+│   ├── train_entrypoint.py      # Fine-tuning script
+│   └── dockerfile               # Training container
+└── scripts/
+    ├── compare_models.py        # Model comparison tool
+    ├── dataset/                 # Data processing
+    │   └── generate_dataset.py  # Dataset preparation
+    ├── ecr/                      # Container registry
+    │   ├── push_deployment_image.py
+    │   └── push_training_image.py
+    ├── s3/                       # S3 operations
+    │   ├── upload_data_to_s3.py
+    │   └── upload_base_model_to_s3.py
+    └── sagemaker/               # SageMaker operations
+        ├── launch_training_job.py
+        ├── launch_endpoint.py
+        └── destroy_endpoint.py
+
+test/
+├── unit/                        # Unit tests
+└── e2e/                         # End-to-end tests
+    └── test_inference.py
+```
+
+## Configuration
+
+All paths and settings are managed in `config.yaml`:
+
+```yaml
+s3:
+  bucket: chronos-presmanes
+
+sagemaker:
+  training:
+    limit_time: 300
+    instance_type: ml.g4dn.xlarge
+  inference:
+    instance_type: ml.t2.medium
+  endpoint_name: chronos-endpoint-prod
+```
+
+## Usage
+
+### 1. Prepare Dataset
+
+```bash
+python src/scripts/dataset/generate_dataset.py
+```
+
+### 2. Upload to S3
+
+```bash
+python src/scripts/s3/upload_data_to_s3.py
+```
+
+### 3. Build and Push Docker Images
+
+```bash
+python src/scripts/ecr/push_training_image.py
+python src/scripts/ecr/push_deployment_image.py
+```
+
+### 4. Launch Training Job
+
+```bash
+python src/scripts/sagemaker/launch_training_job.py
+```
+
+### 5. Deploy Endpoint
+
+```bash
+python src/scripts/sagemaker/launch_endpoint.py
+```
+
+### 6. Test Inference
+
+```bash
+python test/e2e/test_inference.py
+```
+
+### 7. Compare Models
+
+```bash
+python src/scripts/compare_models.py --test-data data/wind-power-forecasting/processed/split/Turbine_data_processed_test.csv
+```
 
 ## Architecture
+
 ![Architecture Diagram](docs/images/diagram.svg)
 
-## AWS Set-Up
+## AWS Setup
 
-To execute this project, it is necessary to configure AWS credentials. To do this, first, create a profile:
+### Configure Profile
 
-``$ aws configure --profile <profile-name>``
+```bash
+aws configure --profile <profile-name>
+```
 
-Here, you will be prompted for the Access Key ID, Secret Access Key, region, and output format. The scripts will use the AWS_PROFILE environment variable to select the profile to use when running the scripts.
-
-It will also be necessary to create an IAM role with the required permissions to execute SageMaker. In this case, a role named ``SageMakerExecutionRole`` has been created with the permissions ``AmazonSageMakerFullAccess`` and ``AmazonS3FullAccess``.
+### Create IAM Role
 
 ```bash
 aws iam create-role --role-name SageMakerExecutionRole --assume-role-policy-document file://trust-policy.json
@@ -55,12 +143,44 @@ aws iam attach-role-policy --role-name SageMakerExecutionRole --policy-arn arn:a
 aws iam attach-role-policy --role-name SageMakerExecutionRole --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
 ```
 
-## ECR Public Login
+### ECR Login
 
-To create the Docker image with the Docker Compose document, it is first necessary to log in to the public ECR repository.
+```bash
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 763104351884.dkr.ecr.us-east-1.amazonaws.com
+```
 
-``aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 763104351884.dkr.ecr.us-east-1.amazonaws.com``
+## Environment Variables
 
-The response should be ``Login Succeeded``.
+Required in `.env`:
 
-If this is the case, you can now build the Docker image and push it to ECR.
+```
+AWS_PROFILE=<your-profile>
+AWS_REGION=eu-west-1
+AWS_SAGEMAKER_ROLE_ARN=<role-arn>
+AWS_ECR_TRAINING_IMAGE_URI=<training-image-uri>
+AWS_ECR_DEPLOYMENT_IMAGE_URI=<deployment-image-uri>
+```
+
+## Local Development
+
+Run inference locally:
+
+```bash
+cd src/deployment
+python serve.py
+```
+
+Or with Docker:
+
+```bash
+docker-compose up
+```
+
+## TODO
+
+- [x] EDA for testing base model locally
+- [x] Training script with AutoGluon locally
+- [x] Training job in SageMaker
+- [x] Deploy model to SageMaker endpoint
+- [x] Inference endpoint testing
+- [ ] Streamlit app for user interaction

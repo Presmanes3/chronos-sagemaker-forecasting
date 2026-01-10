@@ -14,15 +14,7 @@ logger = setup_logger()
 
 
 class ChronosPredictorService:
-    """
-    Encapsulates AutoGluon TimeSeriesPredictor with validation and metadata access.
-    
-    This class handles:
-    - Model loading from read-only filesystem to writable /tmp
-    - Input data validation against model requirements
-    - Prediction execution with proper working directory management
-    - Metadata exposure for API consumers
-    """
+    """Encapsulates AutoGluon TimeSeriesPredictor with validation and metadata access."""
     
     def __init__(self):
         self.predictor: Optional[TimeSeriesPredictor] = None
@@ -30,15 +22,7 @@ class ChronosPredictorService:
         self._tmp_model_dir: Optional[str] = None
     
     def load_model(self, model_dir: str) -> None:
-        """
-        Load AutoGluon model from read-only directory to writable /tmp.
-        
-        Args:
-            model_dir: Path to model artifacts (typically /opt/ml/model/fine_tuned)
-        
-        Raises:
-            RuntimeError: If model loading fails
-        """
+        """Load AutoGluon model from read-only directory to writable /tmp."""
         try:
             logger.info(
                 "Loading model from read-only directory",
@@ -129,16 +113,7 @@ class ChronosPredictorService:
         return getattr(self.predictor, "eval_metric", None)
     
     def validate_input(self, ts_df: TimeSeriesDataFrame, request_id: str) -> None:
-        """
-        Validate input data against model requirements.
-        
-        Args:
-            ts_df: Input time series data
-            request_id: Request identifier for logging
-        
-        Raises:
-            ValueError: If validation fails
-        """
+        """Validate input data against model requirements."""
         # Check required columns
         if self.target not in ts_df.columns:
             raise ValueError(f"Input must contain target column: '{self.target}'")
@@ -159,19 +134,7 @@ class ChronosPredictorService:
         )
     
     def predict(self, ts_df: TimeSeriesDataFrame, request_id: str) -> TimeSeriesDataFrame:
-        """
-        Execute prediction with proper working directory management.
-        
-        Args:
-            ts_df: Input time series data
-            request_id: Request identifier for logging
-        
-        Returns:
-            Predicted values as TimeSeriesDataFrame
-        
-        Raises:
-            RuntimeError: If prediction fails
-        """
+        """Execute prediction with proper working directory management."""
         if self.predictor is None:
             raise RuntimeError("Model not loaded")
         

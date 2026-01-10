@@ -1,15 +1,5 @@
 """
-Chronos Forecasting API - Production-ready inference service for AutoGluon TimeSeriesPredictor.
-
-This FastAPI application provides a production-ready inference endpoint for time series forecasting
-using Amazon Chronos models fine-tuned with AutoGluon. It includes:
-- Structured JSON logging for CloudWatch
-- Model metadata validation
-- RESTful endpoints with Pydantic validation
-- SageMaker compatibility (/ping, /invocations)
-
-Note: All models (baseline and fine-tuned) must be in AutoGluon format (contain predictor.pkl).
-Use create_baseline_model.py to create baseline models in the correct format.
+Chronos Forecasting API - Inference service for AutoGluon TimeSeriesPredictor.
 """
 
 import os
@@ -38,18 +28,7 @@ logger = setup_logger()
 
 
 def find_model_path(base_dir: str = MODEL_BASE_PATH) -> str:
-    """
-    Find AutoGluon model directory containing predictor.pkl.
-    
-    Args:
-        base_dir: Base directory to search (default: /opt/ml/model)
-    
-    Returns:
-        Path to valid AutoGluon model directory
-    
-    Raises:
-        FileNotFoundError: If no valid model found
-    """
+    """Find AutoGluon model directory containing predictor.pkl."""
     base_path = Path(base_dir)
     
     logger.info(
@@ -82,9 +61,9 @@ def find_model_path(base_dir: str = MODEL_BASE_PATH) -> str:
     
     if base_path.exists():
         logger.error("Directory structure:", extra={"request_id": "startup"})
-        for item in sorted(base_path.rglob("*"))[:50]:  # Limit to 50 items
+        for item in sorted(base_path.rglob("*"))[:50]:
             rel_path = item.relative_to(base_path)
-            item_type = "📁" if item.is_dir() else "📄"
+            item_type = "[DIR]" if item.is_dir() else "[FILE]"
             logger.error(
                 f"  {item_type} {rel_path}",
                 extra={"request_id": "startup"}

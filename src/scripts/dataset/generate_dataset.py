@@ -91,7 +91,7 @@ if inferred_freq != '30min' or clean_series['ActivePower'].isna().any():
         print(f"   After interpolation: {nans_final} NaN values ({nans_final/len(clean_series)*100:.1f}%)")
         
         if nans_final > 0:
-            print(f"   ⚠️  Dropping {nans_final} remaining NaN rows")
+            print(f"   Dropping {nans_final} remaining NaN rows")
             clean_series = clean_series.dropna()
 else:
     print(f"    Frequency already correct: 30min")
@@ -113,8 +113,8 @@ n = len(clean_series)
 min_required = CONTEXT_LENGTH + PREDICTION_LENGTH * 2  # Need at least 2 prediction windows
 if n < min_required:
     raise ValueError(
-        f" Dataset too small!\n"
-        f"   Need at least: {min_required:,} rows (context + 2×prediction)\n"
+        f"Dataset too small!\n"
+        f"   Need at least: {min_required:,} rows (context + 2*prediction)\n"
         f"   Got:           {n:,} rows\n"
         f"   Missing:       {min_required - n:,} rows"
     )
@@ -135,12 +135,12 @@ test_start = max(val_start, val_end - CONTEXT_LENGTH)
 print(f"\n{'='*80}")
 print(" TIME SERIES SPLIT STRATEGY (AutoGluon Optimized)")
 print(f"{'='*80}")
-print(f"\n📏 Split Ratios:")
+print(f"\nSplit Ratios:")
 print(f"   Train:      {train_ratio*100:.0f}%")
 print(f"   Validation: {val_ratio*100:.0f}%")
 print(f"   Test:       {test_ratio*100:.0f}%")
 
-print(f"\n Data Splits (with overlapping context):")
+print(f"\nData Splits (with overlapping context):")
 print(f"   {'Split':<12} {'Range':<25} {'Total Rows':<12} {'Context Overlap'}")
 print(f"   {'-'*12} {'-'*25} {'-'*12} {'-'*20}")
 print(f"   {'Train':<12} [0:{train_end}]{' ':<10} {train_end:>10,}  {'-'}")
@@ -152,14 +152,14 @@ train_samples = max(0, (train_end - CONTEXT_LENGTH) // PREDICTION_LENGTH)
 val_samples = max(0, (val_end - val_start - CONTEXT_LENGTH) // PREDICTION_LENGTH)
 test_samples = max(0, (n - test_start - CONTEXT_LENGTH) // PREDICTION_LENGTH)
 
-print(f"\n Training Batches (AutoGluon sliding windows):")
+print(f"\nTraining Batches (AutoGluon sliding windows):")
 print(f"   Train:      {train_samples:>5} batches")
 print(f"   Validation: {val_samples:>5} batches")
 print(f"   Test:       {test_samples:>5} batches")
 print(f"   Total:      {train_samples + val_samples + test_samples:>5} batches")
 
 if train_samples < 5:
-    print(f"\n  WARNING: Only {train_samples} training batches!")
+    print(f"\n WARNING: Only {train_samples} training batches!")
     print(f"   Consider increasing data or reducing prediction_length")
 
 # ===== Save full dataset as Parquet (for fast local analysis) =====
@@ -169,7 +169,7 @@ clean_series_with_split["split"] = "train"
 clean_series_with_split.iloc[val_start:val_end, clean_series_with_split.columns.get_loc("split")] = "val"
 clean_series_with_split.iloc[test_start:, clean_series_with_split.columns.get_loc("split")] = "test"
 clean_series_with_split.to_parquet(parquet_file)
-print(f"\n💾 Saved full dataset (Parquet): {parquet_file}")
+print(f"\nSaved full dataset (Parquet): {parquet_file}")
 
 # ===== Save CSV splits (compatible with train_entrypoint.py) =====
 split_dir = processed_dataset_file.parent / "split"
@@ -180,7 +180,7 @@ train_csv = split_dir / f"{base_name}_train.csv"
 val_csv = split_dir / f"{base_name}_val.csv"
 test_csv = split_dir / f"{base_name}_test.csv"
 
-print(f"\n Saving CSV splits (compatible with SageMaker training)...")
+print(f"\nSaving CSV splits (compatible with SageMaker training)...")
 
 # IMPORTANT: Format must match train_entrypoint.py expectations:
 # - Index column (unnamed) → will be renamed to "timestamp"
@@ -206,7 +206,7 @@ print(f"      (includes {val_end - test_start:,} rows of context from val)")
 
 # ===== Save preprocessing pipeline =====
 joblib.dump(preprocessing_pipeline, pipeline_output_file)
-print(f"\n Saved preprocessing pipeline: {pipeline_output_file}")
+print(f"\nSaved preprocessing pipeline: {pipeline_output_file}")
 
 # ===== Generate comprehensive metadata =====
 metadata = {
@@ -283,14 +283,14 @@ metadata = {
 
 with open(metadata_output_file, "w") as f:
     json.dump(metadata, f, indent=2)
-print(f" Saved metadata: {metadata_output_file}")
+print(f"Saved metadata: {metadata_output_file}")
 
 # ===== Final summary =====
 print("\n" + "="*80)
 print(" DATASET GENERATION COMPLETE!")
 print("="*80)
 
-print("\n Generated Files:")
+print("\nGenerated Files:")
 print(f"   1. Full dataset:  {parquet_file}")
 print(f"   2. Train data:    {train_csv}")
 print(f"   3. Val data:      {val_csv}")
@@ -330,7 +330,7 @@ print(f"   • Batches: {train_samples} → More batches = better learning")
 print(f"   • Time:    Recommend {max(300, train_samples * 10)}s for {train_samples} batches")
 
 if train_samples < 10:
-    print("\n WARNING: Low number of training batches!")
+    print("\nWARNING: Low number of training batches!")
     print("   Consider:")
     print(f"   • Collecting more data (current: {n:,} rows)")
     print(f"   • Reducing prediction_length (current: {PREDICTION_LENGTH})")
