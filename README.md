@@ -24,44 +24,22 @@ Features:
 - Temporal dependency capture
 - Fast CPU inference
 
-## Project Structure
+## Documentation
 
-```
-src/
-├── config.py                    # Configuration loader
-├── deployment/                  # Inference service
-│   ├── serve.py                 # FastAPI application
-│   ├── predictor_service.py     # AutoGluon predictor wrapper
-│   ├── models.py                # Pydantic request/response models
-│   ├── utils.py                 # Data parsing utilities
-│   └── dockerfile               # Deployment container
-├── training/                    # Training job
-│   ├── train_entrypoint.py      # Fine-tuning script
-│   └── dockerfile               # Training container
-└── scripts/
-    ├── compare_models.py        # Model comparison tool
-    ├── dataset/                 # Data processing
-    │   └── generate_dataset.py  # Dataset preparation
-    ├── ecr/                      # Container registry
-    │   ├── push_deployment_image.py
-    │   └── push_training_image.py
-    ├── s3/                       # S3 operations
-    │   ├── upload_data_to_s3.py
-    │   └── upload_base_model_to_s3.py
-    └── sagemaker/               # SageMaker operations
-        ├── launch_training_job.py
-        ├── launch_endpoint.py
-        └── destroy_endpoint.py
+| Document | Description |
+|----------|-------------|
+| [Usage Guide](docs/USAGE.md) | Step-by-step workflow |
+| [API Reference](docs/API.md) | Endpoints, request/response formats |
+| [AWS Setup](docs/AWS_SETUP.md) | IAM, ECR, S3 configuration |
+| [Local Development](docs/LOCAL_DEVELOPMENT.md) | Running locally with Docker |
 
-test/
-├── unit/                        # Unit tests
-└── e2e/                         # End-to-end tests
-    └── test_inference.py
-```
+## Architecture
+
+![Architecture Diagram](docs/images/diagram.svg)
 
 ## Configuration
 
-All paths and settings are managed in `config.yaml`:
+All settings in `config.yaml`:
 
 ```yaml
 s3:
@@ -74,106 +52,6 @@ sagemaker:
   inference:
     instance_type: ml.t2.medium
   endpoint_name: chronos-endpoint-prod
-```
-
-## Usage
-
-### 1. Prepare Dataset
-
-```bash
-python src/scripts/dataset/generate_dataset.py
-```
-
-### 2. Upload to S3
-
-```bash
-python src/scripts/s3/upload_data_to_s3.py
-```
-
-### 3. Build and Push Docker Images
-
-```bash
-python src/scripts/ecr/push_training_image.py
-python src/scripts/ecr/push_deployment_image.py
-```
-
-### 4. Launch Training Job
-
-```bash
-python src/scripts/sagemaker/launch_training_job.py
-```
-
-### 5. Deploy Endpoint
-
-```bash
-python src/scripts/sagemaker/launch_endpoint.py
-```
-
-### 6. Test Inference
-
-```bash
-python test/e2e/test_inference.py
-```
-
-### 7. Compare Models
-
-```bash
-python src/scripts/compare_models.py --test-data data/wind-power-forecasting/processed/split/Turbine_data_processed_test.csv
-```
-
-## Architecture
-
-![Architecture Diagram](docs/images/diagram.svg)
-
-## AWS Setup
-
-### Configure Profile
-
-```bash
-aws configure --profile <profile-name>
-```
-
-### Create IAM Role
-
-```bash
-aws iam create-role --role-name SageMakerExecutionRole --assume-role-policy-document file://trust-policy.json
-
-aws iam attach-role-policy --role-name SageMakerExecutionRole --policy-arn arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
-
-aws iam attach-role-policy --role-name SageMakerExecutionRole --policy-arn arn:aws:iam::aws:policy/AmazonS3FullAccess
-```
-
-### ECR Login
-
-```bash
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 763104351884.dkr.ecr.us-east-1.amazonaws.com
-```
-
-## Environment Variables
-
-Required in `.env`:
-
-```
-AWS_PROFILE=<your-profile>
-AWS_REGION=eu-west-1
-AWS_SAGEMAKER_ROLE_ARN=<role-arn>
-AWS_ECR_TRAINING_IMAGE_URI=<training-image-uri>
-AWS_ECR_DEPLOYMENT_IMAGE_URI=<deployment-image-uri>
-```
-
-## Local Development
-
-Run inference locally:
-
-```bash
-cd src/deployment
-python serve.py
-```
-
-Or with Docker:
-
-```bash
-docker-compose up
 ```
 
 ## TODO
